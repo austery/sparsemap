@@ -55,7 +55,8 @@ def build_prompt(contents: List[dict]) -> str:
 要求：
 1. **识别主线逻辑**：课程的核心思想、步骤流程、关键主张（type: "main"）
 2. **识别支线知识**：达成主线目标所需的技术工具、背景概念（type: "dependency"）
-3. **解释关系**：为每个依赖关系说明"为什么需要这个工具/概念"
+3. **最佳实践校验**：结合行业最佳实践，若文本遗漏关键步骤，请补充节点并标记 type 为 "suggested_best_practice"
+4. **解释关系**：为每个依赖关系说明“为什么需要这个工具/概念”，节点提供 reason 字段
 
 返回严格的 JSON 格式：
 {
@@ -63,10 +64,10 @@ def build_prompt(contents: List[dict]) -> str:
     {
       "id": "n1",
       "label": "节点名称",
-      "type": "main" | "dependency",
+      "type": "main" | "dependency" | "suggested_best_practice",
       "priority": "critical" | "optional",
       "reason": "节点出现的原因",
-      "source": "text1",
+      "source": "url1" | "text1",
       "description": "节点描述"
     }
   ],

@@ -14,12 +14,16 @@ class Settings(BaseSettings):
     # Database (must be provided via .env)
     database_url: str
 
-    # LLM Configuration (must be provided via .env)
-    llm_api_key: str
-    llm_model: str = "gemini-2.0-flash-exp"
+    # LLM Configuration
+    llm_provider: str = "gemini"  # Options: "gemini" or "deepseek"
+    llm_api_key: str  # Required: API key for chosen provider
+    llm_model: str = "gemini-2.0-flash-exp"  # Model name
     llm_temperature: float = 0.2
-    llm_max_tokens: int = 2000
+    llm_max_tokens: int = 4000  # Increased for complex prompts
     llm_max_retries: int = 2
+
+    # DeepSeek specific (only used when llm_provider="deepseek")
+    llm_base_url: str = "https://space.ai-builders.com/backend/v1"
 
     # Content Extractor
     extractor_max_chars: int = 8000
