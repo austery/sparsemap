@@ -9,7 +9,7 @@ from google import genai
 from google.genai import types
 from pydantic import ValidationError
 
-from sparsemap.domain.models import Graph
+from sparsemap.domain.models import Graph, NodeDetails
 from sparsemap.services.llm_provider import LLMProvider
 from sparsemap.services.llm_utils import extract_json, fix_json, repair_json
 
@@ -119,3 +119,52 @@ class GeminiProvider(LLMProvider):
         except Exception as exc:
             logger.exception("Gemini raw generation failed")
             raise ValueError(f"Gemini 生成失败: {exc}")
+    def generate_node_details(self, node_label: str, context: str) -> NodeDetails:
+        """Generate detailed explanation for a specific node"""
+        system_instruction = """你是一位资深的教育专家。请为给定的知识点生成详细的解释卡片。
+你需要返回严格的 JSON 格式，包含以下字段：
+1. definition: 清晰、学术的定义
+2. analogy: 一个通俗易懂的生活类比
+3. importance: 为什么这个概念很重要（在上下文语境如AP课程或大纲中）
+4. actionable_step: 一个具体的行动步骤或练习
+5. keywords: 3-5个相关关键词列表
+
+返回示例：
+{
+  "definition": "...",
+  "analogy": "...",
+  "importance": "...",
+  "actionable_step": "...",
+  "keywords": ["key1", "key2"]
+}"""
+        
+        prompt = f"知识点：{node_label}\n\n上下文/来源内容：\n{context}"
+
+        try:
+            response = self.client.models.generate_content(
+                model=self.model,
+                contents=f"{system_instruction}\n\n{prompt}",
+                config=types.GenerateContentConfig(
+                    temperature=0.3,
+                    max_output_tokens=1000,
+                    response_mime_type="application/json",
+                ),
+            )
+            content = response.text
+            if not content:
+                logger.warning(f"Gemini returned empty content for node: {node_label}. Response: {response}")
+                # Fallback to avoid crash
+                return NodeDetails(
+                    definition="无法生成详细信息 (AI 响应为空)",
+                    analogy="可能由于内容安全策略，无法显示。",
+                    importance="请稍后重试。",
+                    actionable_step="无",
+                    keywords=[]
+                )
+
+            data = repair_json(extract_json(content))
+            return NodeDetails.model_validate(data)
+            
+        except Exception as exc:
+            logger.exception(f"Gemini node details generation failed for {node_label}")
+            raise ValueError(f"Gemini 生成节点详情失败: {exc}")

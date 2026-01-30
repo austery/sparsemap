@@ -67,3 +67,17 @@ class AnalysisResult(SQLModel, table=True):
     url_hash: str = Field(index=True, unique=True)
     graph_data: dict = Field(sa_column=Column(SQLModelJSON))
     created_at: datetime = Field(default_factory=datetime.utcnow)
+
+
+class NodeDetails(BaseModel):
+    definition: str = PydanticField(..., description="The clear, academic definition of the concept")
+    analogy: str = PydanticField(..., description="A real-world analogy to help explain the concept")
+    importance: str = PydanticField(..., description="Why this concept is critical in the broader context")
+    actionable_step: str = PydanticField(..., description="One concrete action to practice or apply this concept")
+    keywords: List[str] = PydanticField(default_factory=list, description="Related keywords")
+
+
+class DetailsRequest(BaseModel):
+    node_label: str
+    node_context: Optional[str] = None
+    node_description: Optional[str] = None

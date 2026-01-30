@@ -13,6 +13,8 @@ def extract_json(payload: str) -> str:
     Returns:
         Cleaned JSON string
     """
+    if payload is None:
+        return ""
     if "```json" in payload:
         return payload.split("```json")[1].split("```")[0].strip()
     if "```" in payload:

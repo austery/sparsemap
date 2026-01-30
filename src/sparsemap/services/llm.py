@@ -4,7 +4,7 @@ import logging
 from typing import List
 
 from sparsemap.core.config import get_settings
-from sparsemap.domain.models import Graph
+from sparsemap.domain.models import Graph, NodeDetails
 from sparsemap.services.llm_provider import LLMProvider
 from sparsemap.services.providers import DeepSeekProvider, GeminiProvider
 
@@ -105,3 +105,16 @@ def analyze_contents(contents: List[dict]) -> Graph:
     provider = _get_provider()
     prompt = build_prompt(contents)
     return provider.generate_graph(contents, prompt)
+def generate_node_details(node_label: str, context: str) -> NodeDetails:
+    """
+    Generate detailed explanation for a node using configured LLM provider
+
+    Args:
+        node_label: Node label
+        context: Context text
+
+    Returns:
+        NodeDetails: Detailed explanation
+    """
+    provider = _get_provider()
+    return provider.generate_node_details(node_label, context)

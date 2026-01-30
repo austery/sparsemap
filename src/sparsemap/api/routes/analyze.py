@@ -3,10 +3,10 @@ from __future__ import annotations
 from fastapi import APIRouter, Depends, HTTPException
 from sqlmodel import Session
 
-from sparsemap.domain.models import AnalyzeRequest, AnalyzeResponse, Graph
+from sparsemap.domain.models import AnalyzeRequest, AnalyzeResponse, Graph, NodeDetails, DetailsRequest
 from sparsemap.infra.db import get_session
 from sparsemap.services.extractor import fetch_url_content, hash_url
-from sparsemap.services.llm import analyze_contents
+from sparsemap.services.llm import analyze_contents, generate_node_details
 from sparsemap.services.repository import get_analysis_by_hash, save_analysis
 
 
@@ -53,3 +53,13 @@ async def analyze(request: AnalyzeRequest, session: Session = Depends(get_sessio
             save_analysis(session, text_hash, graph)
 
     return AnalyzeResponse(success=True, data=graph, sources=sources)
+
+
+@router.post("/node-details", response_model=NodeDetails)
+async def get_node_details(request: DetailsRequest) -> NodeDetails:
+    try:
+        # If context is not provided, use the label as context (minimal fallback)
+        context = request.node_context or request.node_description or request.node_label
+        return generate_node_details(request.node_label, context)
+    except Exception as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc

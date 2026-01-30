@@ -46,3 +46,17 @@ class LLMProvider(ABC):
             str: LLM 原始响应文本
         """
         pass
+
+    @abstractmethod
+    def generate_node_details(self, node_label: str, context: str) -> "NodeDetails":
+        """
+        生成节点详细信息 (Deep Dive)
+
+        Args:
+            node_label: 节点名称
+            context: 上下文或描述
+
+        Returns:
+            NodeDetails: 详细信息对象
+        """
+        pass
