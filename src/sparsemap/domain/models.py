@@ -62,11 +62,35 @@ class AnalyzeResponse(BaseModel):
     sources: List[str]
 
 
+class SourceType(str, Enum):
+    url = "url"
+    text = "text"
+
+
 class AnalysisResult(SQLModel, table=True):
     id: Optional[int] = Field(default=None, primary_key=True)
     url_hash: str = Field(index=True, unique=True)
+    title: str = Field(default="Untitled")  # Display title
+    original_url: Optional[str] = Field(default=None)  # Original URL if source is URL
+    source_type: str = Field(default="text")  # "url" or "text"
     graph_data: dict = Field(sa_column=Column(SQLModelJSON))
     created_at: datetime = Field(default_factory=datetime.utcnow)
+
+
+class HistoryItem(BaseModel):
+    """History list item for API response"""
+    id: int
+    title: str
+    source_type: str
+    original_url: Optional[str] = None
+    node_count: int
+    created_at: datetime
+
+
+class HistoryListResponse(BaseModel):
+    """Response for /api/history"""
+    items: List[HistoryItem]
+    total: int
 
 
 class NodeDetails(BaseModel):
@@ -81,3 +105,8 @@ class DetailsRequest(BaseModel):
     node_label: str
     node_context: Optional[str] = None
     node_description: Optional[str] = None
+
+
+class URLInput(BaseModel):
+    """URL input for add-url endpoint"""
+    url: str

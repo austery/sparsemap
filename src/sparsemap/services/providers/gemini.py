@@ -11,7 +11,7 @@ from pydantic import ValidationError
 
 from sparsemap.domain.models import Graph, NodeDetails
 from sparsemap.services.llm_provider import LLMProvider
-from sparsemap.services.llm_utils import extract_json, fix_json, repair_json
+from sparsemap.services.llm_utils import extract_json, repair_json
 
 logger = logging.getLogger(__name__)
 

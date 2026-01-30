@@ -36,11 +36,63 @@ def fix_json(payload: str) -> str:
     """
     # Remove trailing commas before closing brackets/braces
     payload = re.sub(r',(\s*[}\]])', r'\1', payload)
-    
+
     # Try basic fixes first
     payload = payload.replace(",]", "]").replace(",}", "}")
-    
+
     return payload
+
+
+def escape_newlines_in_strings(payload: str) -> str:
+    """
+    Escape unescaped newlines inside JSON string values.
+    This handles cases where LLM returns multi-line strings without proper escaping.
+    """
+    result = []
+    in_string = False
+    escape_next = False
+    i = 0
+
+    while i < len(payload):
+        char = payload[i]
+
+        if escape_next:
+            result.append(char)
+            escape_next = False
+            i += 1
+            continue
+
+        if char == '\\':
+            result.append(char)
+            escape_next = True
+            i += 1
+            continue
+
+        if char == '"':
+            result.append(char)
+            in_string = not in_string
+            i += 1
+            continue
+
+        if in_string and char == '\n':
+            result.append('\\n')
+            i += 1
+            continue
+
+        if in_string and char == '\r':
+            result.append('\\r')
+            i += 1
+            continue
+
+        if in_string and char == '\t':
+            result.append('\\t')
+            i += 1
+            continue
+
+        result.append(char)
+        i += 1
+
+    return ''.join(result)
 
 
 def repair_json(payload: str) -> dict:
@@ -69,6 +121,14 @@ def repair_json(payload: str) -> dict:
     except json.JSONDecodeError as e:
         print(f"⚠️  JSON parse error: {e.msg} at line {e.lineno}, col {e.colno}")
 
+    # Try escaping newlines in strings (common LLM issue)
+    try:
+        escaped = escape_newlines_in_strings(payload)
+        fixed = fix_json(escaped)
+        return json.loads(fixed)
+    except json.JSONDecodeError:
+        pass
+
     # Try extracting first complete JSON object
     json_match = re.search(r'\{.*\}', payload, re.DOTALL)
     if json_match:
@@ -79,5 +139,13 @@ def repair_json(payload: str) -> dict:
         except json.JSONDecodeError:
             pass
 
+        # Try with newline escaping on extracted JSON
+        try:
+            escaped = escape_newlines_in_strings(extracted)
+            fixed = fix_json(escaped)
+            return json.loads(fixed)
+        except json.JSONDecodeError:
+            pass
+
     # Last resort: return minimal structure
-    raise ValueError(f"Unable to repair JSON after multiple attempts")
+    raise ValueError("Unable to repair JSON after multiple attempts")

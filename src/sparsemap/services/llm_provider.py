@@ -11,7 +11,7 @@ from __future__ import annotations
 from abc import ABC, abstractmethod
 from typing import List
 
-from sparsemap.domain.models import Graph
+from sparsemap.domain.models import Graph, NodeDetails
 
 
 class LLMProvider(ABC):
@@ -48,7 +48,7 @@ class LLMProvider(ABC):
         pass
 
     @abstractmethod
-    def generate_node_details(self, node_label: str, context: str) -> "NodeDetails":
+    def generate_node_details(self, node_label: str, context: str) -> NodeDetails:
         """
         生成节点详细信息 (Deep Dive)
 

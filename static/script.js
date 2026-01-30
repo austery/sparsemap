@@ -85,6 +85,7 @@ function initEventListeners() {
 function switchTab(tab) {
     const urlGroup = document.getElementById('url-input-group');
     const textGroup = document.getElementById('text-input-group');
+    const historyGroup = document.getElementById('history-input-group');
     const urlInput = document.getElementById('url-input');
     const textInput = document.getElementById('text-input');
     const tabButtons = document.querySelectorAll('.tab-btn');
@@ -97,15 +98,134 @@ function switchTab(tab) {
         }
     });
 
+    // Hide all groups
+    urlGroup.classList.add('hidden');
+    textGroup.classList.add('hidden');
+    historyGroup.classList.add('hidden');
+
     if (tab === 'url') {
         urlGroup.classList.remove('hidden');
-        textGroup.classList.add('hidden');
         setTimeout(() => urlInput.focus(), 100);
-    } else {
-        urlGroup.classList.add('hidden');
+    } else if (tab === 'text') {
         textGroup.classList.remove('hidden');
         setTimeout(() => textInput.focus(), 100);
+    } else if (tab === 'history') {
+        historyGroup.classList.remove('hidden');
+        loadHistory();
     }
+}
+
+// ==================== 历史记录 ====================
+
+async function loadHistory() {
+    const historyList = document.getElementById('history-list');
+    historyList.innerHTML = '<div class="history-loading">加载中...</div>';
+
+    try {
+        const response = await fetch(`${API_BASE}/api/history`);
+        const data = await response.json();
+
+        if (!response.ok) {
+            throw new Error(data.detail || 'Failed to load history');
+        }
+
+        if (data.items.length === 0) {
+            historyList.innerHTML = '<div class="history-empty">暂无历史记录</div>';
+            return;
+        }
+
+        historyList.innerHTML = data.items.map(item => `
+            <div class="history-item" data-id="${item.id}">
+                <div class="history-item-info">
+                    <div class="history-item-title">${escapeHtml(item.title)}</div>
+                    <div class="history-item-meta">
+                        <span class="history-type ${item.source_type}">${item.source_type === 'url' ? '🔗 URL' : '📝 文本'}</span>
+                        <span class="history-nodes">${item.node_count} 节点</span>
+                        <span class="history-date">${formatDate(item.created_at)}</span>
+                    </div>
+                </div>
+                <div class="history-item-actions">
+                    <button class="btn-icon" onclick="loadHistoryItem(${item.id})" title="打开">
+                        <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+                            <path d="M6 12L10 8L6 4" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+                        </svg>
+                    </button>
+                    <button class="btn-icon delete" onclick="deleteHistoryItem(${item.id})" title="删除">
+                        <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+                            <path d="M4 4L12 12M12 4L4 12" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+                        </svg>
+                    </button>
+                </div>
+            </div>
+        `).join('');
+
+    } catch (error) {
+        console.error('Load history error:', error);
+        historyList.innerHTML = `<div class="history-error">加载失败: ${error.message}</div>`;
+    }
+}
+
+async function loadHistoryItem(id) {
+    const loadingIndicator = document.getElementById('loading-indicator');
+    loadingIndicator.classList.remove('hidden');
+
+    try {
+        const response = await fetch(`${API_BASE}/api/history/${id}`);
+        const result = await response.json();
+
+        if (!response.ok) {
+            throw new Error(result.detail || 'Failed to load');
+        }
+
+        if (result.success) {
+            currentGraphData = result.data;
+            switchScreen('canvas');
+            setTimeout(() => renderGraph(result.data), 100);
+        }
+    } catch (error) {
+        console.error('Load history item error:', error);
+        alert('加载失败: ' + error.message);
+    } finally {
+        loadingIndicator.classList.add('hidden');
+    }
+}
+
+async function deleteHistoryItem(id) {
+    if (!confirm('确定要删除这条记录吗？')) return;
+
+    try {
+        const response = await fetch(`${API_BASE}/api/history/${id}`, { method: 'DELETE' });
+        if (response.ok) {
+            loadHistory(); // Refresh list
+        } else {
+            const data = await response.json();
+            alert('删除失败: ' + (data.detail || 'Unknown error'));
+        }
+    } catch (error) {
+        console.error('Delete error:', error);
+        alert('删除失败: ' + error.message);
+    }
+}
+
+function escapeHtml(text) {
+    const div = document.createElement('div');
+    div.textContent = text;
+    return div.innerHTML;
+}
+
+function formatDate(isoString) {
+    const date = new Date(isoString);
+    const now = new Date();
+    const diffMs = now - date;
+    const diffMins = Math.floor(diffMs / 60000);
+    const diffHours = Math.floor(diffMs / 3600000);
+    const diffDays = Math.floor(diffMs / 86400000);
+
+    if (diffMins < 1) return '刚刚';
+    if (diffMins < 60) return `${diffMins} 分钟前`;
+    if (diffHours < 24) return `${diffHours} 小时前`;
+    if (diffDays < 7) return `${diffDays} 天前`;
+    return date.toLocaleDateString('zh-CN');
 }
 
 // ==================== 屏幕切换 ====================
@@ -455,6 +575,7 @@ function renderGraph(graphData) {
                     label: node.label,
                     type: node.type,
                     description: node.description || '',
+                    reason: node.reason || '',
                     source: node.source || ''
                 }
             });
@@ -515,26 +636,80 @@ function renderGraph(graphData) {
 
 // ==================== 节点信息显示 ====================
 
-async function showNodeInfo(nodeData) {
+function showNodeInfo(nodeData) {
     const panel = document.getElementById('node-info-panel');
     const title = document.getElementById('node-title');
     const contentDiv = document.getElementById('node-details-content');
     const loading = document.getElementById('loading-details');
 
-    // Reset and Show
+    // Reset and Show panel immediately with basic info
     title.textContent = nodeData.label;
-    contentDiv.innerHTML = '';
+    loading.classList.add('hidden');
+
+    // Build basic info HTML (instant, no API call)
+    let basicHtml = '';
+    
+    if (nodeData.description) {
+        basicHtml += `
+            <div class="detail-card">
+                <div class="card-label">📝 Description</div>
+                <div class="card-content">${nodeData.description}</div>
+            </div>`;
+    }
+    
+    if (nodeData.reason) {
+        basicHtml += `
+            <div class="detail-card">
+                <div class="card-label">💡 Reason</div>
+                <div class="card-content">${nodeData.reason}</div>
+            </div>`;
+    }
+    
+    if (nodeData.source) {
+        basicHtml += `
+            <div class="detail-card">
+                <div class="card-label">📚 Source</div>
+                <div class="card-content">${nodeData.source}</div>
+            </div>`;
+    }
+
+    if (nodeData.type === 'dependency') {
+        basicHtml += `
+            <div class="detail-card" style="border-color: #2dd4bf;">
+                <div class="card-content">💡 这是一个技术依赖，你可以先了解其基本用途，不必深挖细节。</div>
+            </div>`;
+    }
+
+    // Add Deep Dive button
+    basicHtml += `
+        <div style="margin-top: 16px; text-align: center;">
+            <button id="deep-dive-btn" class="deep-dive-btn" onclick="loadDeepDive('${nodeData.label.replace(/'/g, "\\'")}', '${(nodeData.description || '').replace(/'/g, "\\'")}')">
+                🔍 Deep Dive (AI 详解)
+            </button>
+        </div>
+        <div id="deep-dive-content"></div>`;
+
+    contentDiv.innerHTML = basicHtml || '<p>暂无详细信息</p>';
     panel.classList.add('visible');
-    loading.classList.remove('hidden');
+}
+
+async function loadDeepDive(nodeLabel, nodeDescription) {
+    const btn = document.getElementById('deep-dive-btn');
+    const contentDiv = document.getElementById('deep-dive-content');
+    
+    // Disable button and show loading
+    btn.disabled = true;
+    btn.textContent = '⏳ Loading...';
+    contentDiv.innerHTML = '<div class="loading-spinner" style="text-align: center; padding: 20px;">AI 正在生成详解...</div>';
 
     try {
         const response = await fetch(`${API_BASE}/api/node-details`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
-                node_label: nodeData.label,
-                node_description: nodeData.description,
-                node_context: nodeData.source // Passing source ID or text snippet if available
+                node_label: nodeLabel,
+                node_description: nodeDescription,
+                node_context: nodeDescription
             })
         });
 
@@ -542,7 +717,7 @@ async function showNodeInfo(nodeData) {
 
         if (!response.ok) throw new Error(details.detail || 'Failed to fetch details');
 
-        // Render Cards
+        // Render Deep Dive Cards
         const html = `
             <div class="detail-card">
                 <div class="card-label">📖 Definition</div>
@@ -573,12 +748,13 @@ async function showNodeInfo(nodeData) {
         `;
 
         contentDiv.innerHTML = html;
+        btn.style.display = 'none'; // Hide button after success
 
     } catch (error) {
-        console.error("Detail fetch error:", error);
-        contentDiv.innerHTML = `<div class="detail-card" style="border-color: red;"><div class="card-content">Failed to load details. Please try again.</div></div>`;
-    } finally {
-        loading.classList.add('hidden');
+        console.error("Deep Dive error:", error);
+        contentDiv.innerHTML = `<div class="detail-card" style="border-color: red;"><div class="card-content">Failed to load Deep Dive. ${error.message}</div></div>`;
+        btn.disabled = false;
+        btn.textContent = '🔍 Retry Deep Dive';
     }
 }
 
