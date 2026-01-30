@@ -646,6 +646,10 @@ function showNodeInfo(nodeData) {
     title.textContent = nodeData.label;
     loading.classList.add('hidden');
 
+    // Check if we have multiple sources in current graph
+    const hasMultipleSources = currentGraphData && currentGraphData.nodes && 
+        new Set(currentGraphData.nodes.map(n => n.source).filter(Boolean)).size > 1;
+
     // Build basic info HTML (instant, no API call)
     let basicHtml = '';
     
@@ -665,7 +669,8 @@ function showNodeInfo(nodeData) {
             </div>`;
     }
     
-    if (nodeData.source) {
+    // Only show source if multiple sources exist
+    if (nodeData.source && hasMultipleSources) {
         basicHtml += `
             <div class="detail-card">
                 <div class="card-label">📚 Source</div>
