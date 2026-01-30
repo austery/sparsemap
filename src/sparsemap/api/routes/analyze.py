@@ -1,0 +1,49 @@
+from __future__ import annotations
+
+from fastapi import APIRouter, Depends, HTTPException
+from sqlmodel import Session
+
+from sparsemap.domain.models import AnalyzeRequest, AnalyzeResponse, Graph
+from sparsemap.infra.db import get_session
+from sparsemap.services.extractor import fetch_url_content, hash_url
+from sparsemap.services.llm import analyze_contents
+from sparsemap.services.repository import get_analysis_by_hash, save_analysis
+
+
+router = APIRouter()
+
+
+@router.post("/analyze", response_model=AnalyzeResponse)
+async def analyze(request: AnalyzeRequest, session: Session = Depends(get_session)) -> AnalyzeResponse:
+    contents = []
+    sources = []
+
+    if not request.urls and not request.texts:
+        raise HTTPException(status_code=400, detail="至少提供一个 URL 或文本。")
+
+    for idx, url in enumerate(request.urls, start=1):
+        url_hash = hash_url(url)
+        cached = get_analysis_by_hash(session, url_hash)
+        if cached and len(request.urls) == 1 and not request.texts:
+            graph = Graph.model_validate(cached.graph_data)
+            return AnalyzeResponse(success=True, data=graph, sources=[f"url{idx}"])
+
+        text, _ = await fetch_url_content(url)
+        contents.append({"source": f"url{idx}", "text": text})
+        sources.append(f"url{idx}")
+
+    for idx, text in enumerate(request.texts, start=1):
+        contents.append({"source": f"text{idx}", "text": text})
+        sources.append(f"text{idx}")
+
+    try:
+        graph = analyze_contents(contents)
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
+
+    for url in request.urls:
+        url_hash = hash_url(url)
+        if not get_analysis_by_hash(session, url_hash):
+            save_analysis(session, url_hash, graph)
+
+    return AnalyzeResponse(success=True, data=graph, sources=sources)
