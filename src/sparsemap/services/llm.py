@@ -28,6 +28,7 @@ def _get_provider() -> LLMProvider:
     if provider_name == "gemini":
         return GeminiProvider(
             api_key=settings.llm_api_key,
+            base_url=settings.llm_base_url,
             model=settings.llm_model,
             temperature=settings.llm_temperature,
             max_tokens=settings.llm_max_tokens,
@@ -74,7 +75,7 @@ def build_prompt(contents: List[dict]) -> str:
     {
       "source": "n1",
       "target": "n2",
-      "type": "depends_on" | "references" | "implements",
+      "type": "depends_on" | "references" | "implements" | "supports",
       "reason": "为什么需要这个依赖"
     }
   ],

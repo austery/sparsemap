@@ -24,6 +24,9 @@ SparseMap 支持多个 LLM 提供商，您可以根据需求自由切换。
 LLM_PROVIDER=gemini
 LLM_API_KEY=your_gemini_api_key
 LLM_MODEL=gemini-2.0-flash-exp
+# Optional: Set Base URL for proxy/custom endpoint
+# LLM_BASE_URL=https://generativelanguage.googleapis.com
+
 ```
 
 **获取 API Key**: https://aistudio.google.com/app/apikey

@@ -11,7 +11,7 @@ from pydantic import ValidationError
 
 from sparsemap.domain.models import Graph
 from sparsemap.services.llm_provider import LLMProvider
-from sparsemap.services.llm_utils import extract_json, fix_json
+from sparsemap.services.llm_utils import extract_json, fix_json, repair_json
 
 logger = logging.getLogger(__name__)
 
@@ -22,6 +22,7 @@ class GeminiProvider(LLMProvider):
     def __init__(
         self,
         api_key: str,
+        base_url: str | None = None,
         model: str = "gemini-2.0-flash-exp",
         temperature: float = 0.2,
         max_tokens: int = 2000,
@@ -31,20 +32,35 @@ class GeminiProvider(LLMProvider):
             raise ValueError("Gemini API key is required")
 
         self.api_key = api_key
+        self.base_url = base_url
         self.model = model
         self.temperature = temperature
         self.max_tokens = max_tokens
         self.max_retries = max_retries
 
-        self.client = genai.Client(api_key=api_key)
-        logger.info(f"✓ GeminiProvider initialized (model: {model})")
+        http_options = types.HttpOptions(baseUrl=base_url) if base_url else None
+        self.client = genai.Client(api_key=api_key, http_options=http_options)
+        
+        base_url_log = f", base_url: {base_url}" if base_url else ""
+        logger.info(f"✓ GeminiProvider initialized (model: {model}{base_url_log})")
 
     def generate_graph(self, contents: List[dict], prompt: str) -> Graph:
         """Generate knowledge graph using Gemini API"""
-        system_instruction = (
-            "你是一位知识架构专家，擅长将复杂课程内容解构为清晰的逻辑骨架。"
-            "返回纯 JSON，不要包含 markdown 代码块。"
-        )
+        system_instruction = """你是一位知识架构专家，擅长将复杂的课程内容解构为清晰的逻辑骨架和知识依赖关系。
+
+**重要：JSON 格式要求**
+1. 所有字符串中的特殊字符（引号、换行符、反斜杠等）必须正确转义
+2. 字符串中的双引号必须转义为 \\"
+3. 不要在 JSON 字符串中使用未转义的引号
+4. 不要在对象或数组的最后一个元素后添加逗号
+5. 返回纯 JSON，不要包含 markdown 代码块标记
+
+返回格式：
+{
+  "nodes": [{"id": "n1", "label": "节点", "type": "main", "priority": "critical", "reason": "原因", "source": "text1", "description": "描述"}],
+  "edges": [{"source": "n1", "target": "n2", "type": "depends_on", "reason": "原因"}],
+  "summary": "总结"
+}"""
 
         last_error: Exception | None = None
         for attempt in range(self.max_retries + 1):
@@ -55,12 +71,27 @@ class GeminiProvider(LLMProvider):
                     config=types.GenerateContentConfig(
                         temperature=self.temperature,
                         max_output_tokens=self.max_tokens,
+                        response_mime_type="application/json",
                     ),
                 )
                 content = response.text
-                json_payload = fix_json(extract_json(content))
-                data = json.loads(json_payload)
-                return Graph.model_validate(data)
+                
+                # Use robust repair logic
+                try:
+                    data = repair_json(extract_json(content))
+                    return Graph.model_validate(data)
+                except ValueError as ve:
+                    logger.error(f"JSON repair failed: {ve}")
+                    logger.error(f"❌ Failed Raw Content (Length: {len(content)}):\n{content}")
+                    
+                    # Save debug files
+                    with open("debug_gemini_prompt.txt", "w", encoding="utf-8") as f:
+                        f.write(f"{system_instruction}\n\n{prompt}")
+                    with open("debug_gemini_response.txt", "w", encoding="utf-8") as f:
+                        f.write(content)
+                    logger.info("Saved debug files: debug_gemini_prompt.txt, debug_gemini_response.txt")
+                    
+                    raise
 
             except (json.JSONDecodeError, ValidationError) as exc:
                 last_error = exc

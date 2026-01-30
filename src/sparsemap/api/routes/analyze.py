@@ -46,4 +46,10 @@ async def analyze(request: AnalyzeRequest, session: Session = Depends(get_sessio
         if not get_analysis_by_hash(session, url_hash):
             save_analysis(session, url_hash, graph)
 
+    for text in request.texts:
+        # Use hash of text content as key
+        text_hash = hash_url(text)
+        if not get_analysis_by_hash(session, text_hash):
+            save_analysis(session, text_hash, graph)
+
     return AnalyzeResponse(success=True, data=graph, sources=sources)

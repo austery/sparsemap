@@ -25,6 +25,7 @@ class EdgeType(str, Enum):
     depends_on = "depends_on"
     references = "references"
     implements = "implements"
+    supports = "supports"
 
 
 class Node(BaseModel):
