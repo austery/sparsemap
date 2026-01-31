@@ -123,7 +123,7 @@ async function handleAnalyze() {
             UI.switchScreen('canvas');
             setTimeout(() => renderGraph(result.data), 100);
         } else {
-             alert('分析失败: ' + (result.error || result.detail || '未知错误'));
+            alert('分析失败: ' + (result.error || result.detail || '未知错误'));
         }
     } catch (e) {
         console.error(e);
@@ -157,7 +157,7 @@ async function handleAnalyzeText() {
             UI.switchScreen('canvas');
             setTimeout(() => renderGraph(result.data), 100);
         } else {
-             alert('分析失败: ' + (result.error || result.detail || '未知错误'));
+            alert('分析失败: ' + (result.error || result.detail || '未知错误'));
         }
     } catch (e) {
         console.error(e);
@@ -200,7 +200,7 @@ async function loadHistoryItem(id) {
         console.error(e);
         alert('加载失败: ' + e.message);
     } finally {
-         UI.setLoading('loading-indicator', false);
+        UI.setLoading('loading-indicator', false);
     }
 }
 
