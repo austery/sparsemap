@@ -31,7 +31,9 @@ export async function fetchHistoryItem(id) {
 }
 
 export async function deleteHistoryItem(id) {
-  const response = await fetch(`${API_BASE}/api/history/${encodeURIComponent(id)}`, { method: 'DELETE' });
+  const response = await fetch(`${API_BASE}/api/history/${encodeURIComponent(id)}`, {
+    method: 'DELETE',
+  });
   if (!response.ok) {
     let data;
     try {
