@@ -1,5 +1,5 @@
 // static/js/graph.js
-import { state, setCy } from './state.js';
+import { state, setCy, setGraphData } from './state.js';
 import { showNodeInfo, hideNodeInfo } from './ui.js';
 
 export function initCytoscape() {
@@ -178,10 +178,8 @@ export function renderGraph(graphData) {
 
 export function mergeGraphData(newData) {
     if (!state.currentGraphData) {
-        // If no existing data, just render new data.
-        // Note: The caller should ideally set currentGraphData if it's empty.
-        // But we can handle it here if passed explicitly.
-        // However, this function assumes it modifies state.currentGraphData.
+        setGraphData(newData);
+        renderGraph(newData);
         return;
     }
 
