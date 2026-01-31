@@ -4,7 +4,10 @@ import { showNodeInfo, hideNodeInfo } from './ui.js';
 
 export function initCytoscape() {
     const container = document.getElementById('cy');
-    if (!container) return;
+    if (!container) {
+        console.error('Cytoscape initialization failed: container element with id "cy" not found.');
+        return;
+    }
 
     if (state.cy) {
         console.log('Cytoscape already initialized');
@@ -111,9 +114,9 @@ export function renderGraph(graphData) {
 
     const cy = state.cy;
     if (!cy) {
-         console.error('Cytoscape 初始化失败！');
-         alert('画布初始化失败，请刷新页面重试');
-         return;
+        console.error('Cytoscape 初始化失败！');
+        alert('画布初始化失败，请刷新页面重试');
+        return;
     }
 
     // Clear existing

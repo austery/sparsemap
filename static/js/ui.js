@@ -89,30 +89,33 @@ export function renderHistoryList(items) {
         return;
     }
 
-    historyList.innerHTML = items.map(item => `
-        <div class="history-item" data-id="${item.id}">
+    historyList.innerHTML = items.map(item => {
+        const sourceType = (item.source_type === 'url' || item.source_type === 'text') ? item.source_type : 'text';
+        const safeId = escapeHtml(String(item.id));
+        return `
+        <div class="history-item" data-id="${safeId}">
             <div class="history-item-info">
                 <div class="history-item-title">${escapeHtml(item.title)}</div>
                 <div class="history-item-meta">
-                    <span class="history-type ${item.source_type}">${item.source_type === 'url' ? '🔗 URL' : '📝 文本'}</span>
+                    <span class="history-type ${sourceType}">${sourceType === 'url' ? '🔗 URL' : '📝 文本'}</span>
                     <span class="history-nodes">${item.node_count} 节点</span>
                     <span class="history-date">${formatDate(item.created_at)}</span>
                 </div>
             </div>
             <div class="history-item-actions">
-                <button class="btn-icon load-history-btn" data-id="${item.id}" title="打开">
+                <button class="btn-icon load-history-btn" data-id="${safeId}" title="打开">
                     <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
                         <path d="M6 12L10 8L6 4" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
                     </svg>
                 </button>
-                <button class="btn-icon delete-history-btn" data-id="${item.id}" title="删除">
+                <button class="btn-icon delete-history-btn" data-id="${safeId}" title="删除">
                     <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
                         <path d="M4 4L12 12M12 4L4 12" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
                     </svg>
                 </button>
             </div>
         </div>
-    `).join('');
+    `}).join('');
 }
 
 export function showNodeInfo(nodeData, currentGraphData) {
@@ -133,7 +136,7 @@ export function showNodeInfo(nodeData, currentGraphData) {
         basicHtml += `
             <div class="detail-card">
                 <div class="card-label">📝 Description</div>
-                <div class="card-content">${nodeData.description}</div>
+                <div class="card-content">${escapeHtml(nodeData.description)}</div>
             </div>`;
     }
 
@@ -141,7 +144,7 @@ export function showNodeInfo(nodeData, currentGraphData) {
         basicHtml += `
             <div class="detail-card">
                 <div class="card-label">💡 Reason</div>
-                <div class="card-content">${nodeData.reason}</div>
+                <div class="card-content">${escapeHtml(nodeData.reason)}</div>
             </div>`;
     }
 
@@ -149,7 +152,7 @@ export function showNodeInfo(nodeData, currentGraphData) {
         basicHtml += `
             <div class="detail-card">
                 <div class="card-label">📚 Source</div>
-                <div class="card-content">${nodeData.source}</div>
+                <div class="card-content">${escapeHtml(nodeData.source)}</div>
             </div>`;
     }
 
@@ -184,28 +187,28 @@ export function renderDeepDiveContent(details) {
     const html = `
         <div class="detail-card">
             <div class="card-label">📖 Definition</div>
-            <div class="card-content">${details.definition}</div>
+            <div class="card-content">${escapeHtml(details.definition)}</div>
         </div>
 
         <div class="detail-card">
             <div class="card-label">💡 Analogy</div>
-            <div class="card-content">${details.analogy}</div>
+            <div class="card-content">${escapeHtml(details.analogy)}</div>
         </div>
 
         <div class="detail-card">
             <div class="card-label">⚡ Why It Matters</div>
-            <div class="card-content">${details.importance}</div>
+            <div class="card-content">${escapeHtml(details.importance)}</div>
         </div>
 
         <div class="detail-card">
             <div class="card-label">🚀 Actionable Step</div>
-            <div class="card-content">${details.actionable_step}</div>
+            <div class="card-content">${escapeHtml(details.actionable_step)}</div>
         </div>
 
         <div class="detail-card">
             <div class="card-label">🏷️ Keywords</div>
             <div class="card-content">
-                ${details.keywords.map(k => `<span class="keyword-tag">${k}</span>`).join('')}
+                ${details.keywords.map(k => `<span class="keyword-tag">${escapeHtml(k)}</span>`).join('')}
             </div>
         </div>
     `;
@@ -216,7 +219,7 @@ export function renderDeepDiveError(error) {
     const contentDiv = document.getElementById('deep-dive-content');
     const btn = document.getElementById('deep-dive-btn');
 
-    contentDiv.innerHTML = `<div class="detail-card" style="border-color: red;"><div class="card-content">Failed to load Deep Dive. ${error.message}</div></div>`;
+    contentDiv.innerHTML = `<div class="detail-card" style="border-color: red;"><div class="card-content">Failed to load Deep Dive. ${escapeHtml(error.message)}</div></div>`;
     if (btn) {
         btn.disabled = false;
         btn.textContent = '🔍 Retry Deep Dive';

@@ -179,7 +179,7 @@ async function loadHistory() {
         if (data.items) {
             UI.renderHistoryList(data.items);
         } else {
-             historyList.innerHTML = '<div class="history-error">数据格式错误</div>';
+            historyList.innerHTML = '<div class="history-error">数据格式错误</div>';
         }
     } catch (e) {
         console.error(e);
