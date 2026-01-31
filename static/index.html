@@ -108,6 +108,21 @@
                     </svg>
                     <span>关联新概念</span>
                 </button>
+                <div class="export-dropdown">
+                    <button id="export-btn" class="control-btn" title="导出图谱">
+                        <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+                            <path d="M8 2V10M8 10L5 7M8 10L11 7" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+                            <path d="M2 12V13C2 13.5523 2.44772 14 3 14H13C13.5523 14 14 13.5523 14 13V12" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+                        </svg>
+                        <span>导出</span>
+                    </button>
+                    <div id="export-menu" class="export-menu hidden">
+                        <button class="export-option" data-format="mermaid">📊 Mermaid</button>
+                        <button class="export-option" data-format="d2">🎨 D2</button>
+                        <button class="export-option" data-format="json">📦 JSON</button>
+                        <button class="export-option" data-format="markdown">📝 Markdown</button>
+                    </div>
+                </div>
             </div>
 
             <button id="add-url-btn" class="btn-secondary">

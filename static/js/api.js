@@ -84,3 +84,20 @@ export async function integrateConcept(payload) {
     body: JSON.stringify(payload),
   });
 }
+
+export async function exportGraph(analysisId, format = 'mermaid') {
+  // format: 'mermaid' | 'd2' | 'json' | 'markdown'
+  const response = await fetch(
+    `${API_BASE}/api/export/${encodeURIComponent(analysisId)}?format=${encodeURIComponent(format)}`
+  );
+  if (!response.ok) {
+    let data;
+    try {
+      data = await response.json();
+    } catch (_e) {
+      throw new Error(`HTTP ${response.status} ${response.statusText}`);
+    }
+    throw new Error(data.detail || 'Export failed');
+  }
+  return response.text();
+}

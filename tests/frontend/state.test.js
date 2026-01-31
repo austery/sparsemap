@@ -6,11 +6,13 @@ describe('State Management', () => {
         // Reset state manually since it's a singleton
         state.cy = null;
         state.currentGraphData = null;
+        state.currentAnalysisId = null;
     });
 
     it('should initialize with null values', () => {
         expect(state.cy).toBeNull();
         expect(state.currentGraphData).toBeNull();
+        expect(state.currentAnalysisId).toBeNull();
     });
 
     it('should set cy instance', () => {
@@ -23,5 +25,12 @@ describe('State Management', () => {
         const mockData = { nodes: [], edges: [] };
         setGraphData(mockData);
         expect(state.currentGraphData).toEqual(mockData);
+    });
+
+    it('should set graph data with analysis id', () => {
+        const mockData = { nodes: [], edges: [] };
+        setGraphData(mockData, 123);
+        expect(state.currentGraphData).toEqual(mockData);
+        expect(state.currentAnalysisId).toBe(123);
     });
 });

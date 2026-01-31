@@ -1011,6 +1011,49 @@ textarea {
     flex-shrink: 0;
 }
 
+/* Export Dropdown */
+.export-dropdown {
+    position: relative;
+    display: inline-block;
+}
+
+.export-menu {
+    position: absolute;
+    top: 100%;
+    right: 0;
+    margin-top: 4px;
+    background: var(--bg-panel);
+    border: var(--border-glass);
+    border-radius: var(--radius-sm);
+    padding: 4px;
+    min-width: 140px;
+    z-index: 100;
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4);
+    backdrop-filter: blur(10px);
+}
+
+.export-menu.hidden {
+    display: none;
+}
+
+.export-option {
+    display: block;
+    width: 100%;
+    padding: 8px 12px;
+    background: transparent;
+    border: none;
+    color: var(--text-primary);
+    font-size: 13px;
+    text-align: left;
+    cursor: pointer;
+    border-radius: 4px;
+    transition: background 0.15s ease;
+}
+
+.export-option:hover {
+    background: rgba(139, 92, 246, 0.2);
+}
+
 /* Modal Label and Hint */
 .modal-label {
     display: block;

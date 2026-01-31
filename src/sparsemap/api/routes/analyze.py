@@ -1,6 +1,7 @@
 from __future__ import annotations
 
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, Query
+from fastapi.responses import PlainTextResponse
 from sqlmodel import Session
 
 from sparsemap.domain.models import (
@@ -24,6 +25,7 @@ from sparsemap.domain.models import (
 )
 from sparsemap.infra.db import get_session
 from sparsemap.services.extractor import fetch_url_content, hash_url
+from sparsemap.services.exporter import ExportFormat, export_graph, get_mime_type
 from sparsemap.services.llm import (
     analyze_contents,
     generate_node_details,
@@ -402,3 +404,29 @@ async def integrate_concept_endpoint(
 
     except Exception as exc:
         raise HTTPException(status_code=500, detail=f"关联失败: {str(exc)}") from exc
+
+
+@router.get("/export/{analysis_id}")
+async def export_analysis(
+    analysis_id: int,
+    format: ExportFormat = Query(default=ExportFormat.MERMAID),
+    session: Session = Depends(get_session),
+) -> PlainTextResponse:
+    """
+    Export a graph analysis to various formats.
+
+    Supported formats:
+    - mermaid: Mermaid diagram syntax
+    - d2: D2 diagram syntax
+    - json: Full JSON export
+    - markdown: Human-readable Markdown with tables
+    """
+    record = get_analysis_by_id(session, analysis_id)
+    if not record:
+        raise HTTPException(status_code=404, detail="Analysis not found")
+
+    graph = Graph.model_validate(record.graph_data)
+    content = export_graph(graph, format)
+    mime_type = get_mime_type(format)
+
+    return PlainTextResponse(content=content, media_type=mime_type)

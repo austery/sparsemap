@@ -8,6 +8,7 @@ import {
 } from './graph.js';
 import { setGraphData, state } from './state.js';
 import * as UI from './ui.js';
+import { exportGraphLocally } from './exporter.js';
 
 document.addEventListener('DOMContentLoaded', () => {
   initEventListeners();
@@ -103,6 +104,32 @@ function initEventListeners() {
   if (newConceptInput) {
     newConceptInput.addEventListener('keypress', (e) => {
       if (e.key === 'Enter') handleIntegrateConcept();
+    });
+  }
+
+  // Export dropdown
+  const exportBtn = document.getElementById('export-btn');
+  const exportMenu = document.getElementById('export-menu');
+  
+  if (exportBtn && exportMenu) {
+    exportBtn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      exportMenu.classList.toggle('hidden');
+    });
+    
+    // Close menu when clicking outside
+    document.addEventListener('click', () => {
+      exportMenu.classList.add('hidden');
+    });
+    
+    // Handle export option clicks
+    exportMenu.querySelectorAll('.export-option').forEach((option) => {
+      option.addEventListener('click', (e) => {
+        e.stopPropagation();
+        const format = option.dataset.format;
+        handleExport(format);
+        exportMenu.classList.add('hidden');
+      });
     });
   }
 
@@ -228,7 +255,7 @@ async function loadHistoryItem(id) {
   try {
     const result = await API.fetchHistoryItem(id);
     if (result.success) {
-      setGraphData(result.data);
+      setGraphData(result.data, parseInt(id, 10));  // Store analysis ID
       UI.switchScreen('canvas');
       setTimeout(() => renderGraph(result.data), 100);
     }
@@ -373,6 +400,42 @@ async function handleIntegrateConcept() {
   } finally {
     UI.setLoading('link-modal-loading', false);
     UI.setButtonLoading('confirm-link-btn', false);
+  }
+}
+
+async function handleExport(format) {
+  if (!state.currentGraphData) {
+    alert('没有可导出的图谱数据');
+    return;
+  }
+
+  try {
+    let content;
+    
+    // If we have an analysis ID, use the API for consistent export
+    if (state.currentAnalysisId) {
+      content = await API.exportGraph(state.currentAnalysisId, format);
+    } else {
+      // Export locally from current graph data
+      content = exportGraphLocally(state.currentGraphData, format);
+    }
+
+    // Copy to clipboard and offer download
+    await navigator.clipboard.writeText(content);
+    
+    const ext = { mermaid: 'mmd', d2: 'd2', json: 'json', markdown: 'md' }[format] || 'txt';
+    const blob = new Blob([content], { type: 'text/plain' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `knowledge-graph.${ext}`;
+    a.click();
+    URL.revokeObjectURL(url);
+
+    alert(`✅ 已导出为 ${format.toUpperCase()} 格式并复制到剪贴板`);
+  } catch (e) {
+    console.error(e);
+    alert(`导出失败: ${e.message}`);
   }
 }
 
