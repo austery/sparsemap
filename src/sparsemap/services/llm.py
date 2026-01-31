@@ -57,6 +57,7 @@ def build_prompt(contents: List[dict]) -> str:
 1. **识别主线逻辑**：课程的核心思想、步骤流程、关键主张（type: "main"）
 2. **识别支线知识**：达成主线目标所需的技术工具、背景概念（type: "dependency"）
 3. **解释关系**：为每个依赖关系说明"为什么需要这个工具/概念"
+4. **边类型限制**：edges.type 只能使用 depends_on, references, implements, supports 四种之一
 
 返回严格的 JSON 格式：
 {

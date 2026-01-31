@@ -57,6 +57,10 @@ class DeepSeekProvider(LLMProvider):
 4. 不要在对象或数组的最后一个元素后添加逗号
 5. 返回纯 JSON，不要包含 markdown 代码块标记
 
+**边类型严格限制**：
+- 只能使用以下四种边类型：depends_on, references, implements, supports
+- 不要使用 extends, includes, contains 等其他类型
+
 返回格式：
 {
   "nodes": [{"id": "n1", "label": "节点", "type": "main", "priority": "critical", "reason": "原因", "source": "text1", "description": "描述"}],
