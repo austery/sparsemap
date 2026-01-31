@@ -1,28 +1,5 @@
 import { API_BASE } from './config.js';
 
-async function handleResponse(response) {
-    let data;
-    const contentType = response.headers.get("content-type");
-    if (contentType && contentType.indexOf("application/json") !== -1) {
-        try {
-            data = await response.json();
-        } catch (e) {
-             // Failed to parse JSON, fall back to status text if error
-             if (!response.ok) throw new Error(`HTTP ${response.status} ${response.statusText}`);
-             throw new Error("Invalid JSON response");
-        }
-    } else {
-        // Not JSON
-        if (!response.ok) throw new Error(`HTTP ${response.status} ${response.statusText}`);
-        return null; // Or text?
-    }
-
-    if (!response.ok) {
-        throw new Error(data.detail || data.error || `HTTP ${response.status} Error`);
-    }
-    return data;
-}
-
 // Simpler version that matches existing usage patterns (expects JSON almost always)
 async function fetchJson(url, options = {}) {
     const response = await fetch(url, options);
@@ -94,14 +71,5 @@ export async function fetchNodeDetails(payload) {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload)
-    });
-}
-
-export async function analyzeTest() {
-    return fetchJson(`${API_BASE}/api/analyze-test`, {
-        method: 'POST',
-        headers: {
-            'Content-Type': 'application/json',
-        }
     });
 }

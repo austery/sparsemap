@@ -1,10 +1,14 @@
 // static/js/ui.js
+import { state } from './state.js';
 
 export function escapeHtml(text) {
     if (!text) return '';
-    const div = document.createElement('div');
-    div.textContent = text;
-    return div.innerHTML;
+    return String(text)
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;")
+        .replace(/"/g, "&quot;")
+        .replace(/'/g, "&#039;");
 }
 
 export function formatDate(isoString) {
@@ -30,6 +34,8 @@ export function switchTab(tab) {
     const textInput = document.getElementById('text-input');
     const tabButtons = document.querySelectorAll('.tab-btn');
 
+    if (!urlGroup || !textGroup || !historyGroup) return;
+
     tabButtons.forEach(btn => {
         if (btn.dataset.tab === tab) {
             btn.classList.add('active');
@@ -45,10 +51,10 @@ export function switchTab(tab) {
 
     if (tab === 'url') {
         urlGroup.classList.remove('hidden');
-        setTimeout(() => urlInput.focus(), 100);
+        if (urlInput) setTimeout(() => urlInput.focus(), 100);
     } else if (tab === 'text') {
         textGroup.classList.remove('hidden');
-        setTimeout(() => textInput.focus(), 100);
+        if (textInput) setTimeout(() => textInput.focus(), 100);
     } else if (tab === 'history') {
         historyGroup.classList.remove('hidden');
     }
@@ -84,6 +90,8 @@ export function switchScreen(screenName) {
 
 export function renderHistoryList(items) {
     const historyList = document.getElementById('history-list');
+    if (!historyList) return;
+
     if (items.length === 0) {
         historyList.innerHTML = '<div class="history-empty">暂无历史记录</div>';
         return;
@@ -123,6 +131,8 @@ export function showNodeInfo(nodeData, currentGraphData) {
     const title = document.getElementById('node-title');
     const contentDiv = document.getElementById('node-details-content');
     const loading = document.getElementById('loading-details');
+
+    if (!panel || !title || !contentDiv || !loading) return;
 
     title.textContent = nodeData.label;
     loading.classList.add('hidden');
@@ -182,6 +192,8 @@ export function renderDeepDiveContent(details) {
      const contentDiv = document.getElementById('deep-dive-content');
      const btn = document.getElementById('deep-dive-btn');
 
+    if (!contentDiv) return;
+
     if (btn) btn.style.display = 'none';
 
     const html = `
@@ -219,6 +231,8 @@ export function renderDeepDiveError(error) {
     const contentDiv = document.getElementById('deep-dive-content');
     const btn = document.getElementById('deep-dive-btn');
 
+    if (!contentDiv) return;
+
     contentDiv.innerHTML = `<div class="detail-card" style="border-color: red;"><div class="card-content">Failed to load Deep Dive. ${escapeHtml(error.message)}</div></div>`;
     if (btn) {
         btn.disabled = false;
@@ -234,24 +248,38 @@ export function setDeepDiveLoading() {
         btn.disabled = true;
         btn.textContent = '⏳ Loading...';
     }
-    contentDiv.innerHTML = '<div class="loading-spinner" style="text-align: center; padding: 20px;">AI 正在生成详解...</div>';
+
+    if (contentDiv) {
+        contentDiv.innerHTML = '<div class="loading-spinner" style="text-align: center; padding: 20px;">AI 正在生成详解...</div>';
+    }
 }
 
 export function hideNodeInfo() {
-    document.getElementById('node-info-panel').classList.remove('visible');
+    const panel = document.getElementById('node-info-panel');
+    if (panel) panel.classList.remove('visible');
+
+    if (state.cy) {
+        state.cy.elements().unselect();
+    }
 }
 
 export function showAddUrlModal() {
     const modal = document.getElementById('add-url-modal');
     const input = document.getElementById('new-url-input');
-    modal.classList.remove('hidden');
-    input.value = '';
-    input.focus();
+
+    if (modal) modal.classList.remove('hidden');
+    if (input) {
+        input.value = '';
+        input.focus();
+    }
 }
 
 export function hideAddUrlModal() {
-    document.getElementById('add-url-modal').classList.add('hidden');
-    document.getElementById('modal-loading').classList.add('hidden');
+    const modal = document.getElementById('add-url-modal');
+    const loading = document.getElementById('modal-loading');
+
+    if (modal) modal.classList.add('hidden');
+    if (loading) loading.classList.add('hidden');
 }
 
 export function setLoading(elementId, isLoading) {
