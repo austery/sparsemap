@@ -218,7 +218,7 @@ export function renderGraph(graphData) {
   try {
     cy.layout({
       name: 'dagre',
-      rankDir: 'TB',
+      rankDir: layoutDirection,
       spacingFactor: 1.2,
       padding: 30,
       animate: true,
