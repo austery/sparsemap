@@ -1,6 +1,6 @@
 import * as API from './api.js';
 import * as UI from './ui.js';
-import { renderGraph, mergeGraphData } from './graph.js';
+import { renderGraph, mergeGraphData, toggleLayoutDirection, formatGraph, addLinkedConcept, getLayoutDirection } from './graph.js';
 import { state, setGraphData } from './state.js';
 
 document.addEventListener('DOMContentLoaded', () => {
@@ -70,6 +70,32 @@ function initEventListeners() {
     if (newUrlInput) {
         newUrlInput.addEventListener('keypress', (e) => {
             if (e.key === 'Enter') handleAddUrl();
+        });
+    }
+
+    // Graph Control Buttons
+    const toggleLayoutBtn = document.getElementById('toggle-layout-btn');
+    const formatGraphBtn = document.getElementById('format-graph-btn');
+    const linkConceptBtn = document.getElementById('link-concept-btn');
+
+    if (toggleLayoutBtn) toggleLayoutBtn.addEventListener('click', handleToggleLayout);
+    if (formatGraphBtn) formatGraphBtn.addEventListener('click', handleFormatGraph);
+    if (linkConceptBtn) linkConceptBtn.addEventListener('click', showLinkConceptModal);
+
+    // Link Concept Modal
+    const closeLinkModalBtn = document.getElementById('close-link-modal');
+    const cancelLinkBtn = document.getElementById('cancel-link-btn');
+    const linkConceptBackdrop = document.getElementById('link-concept-backdrop');
+    const confirmLinkBtn = document.getElementById('confirm-link-btn');
+    const newConceptInput = document.getElementById('new-concept-input');
+
+    if (closeLinkModalBtn) closeLinkModalBtn.addEventListener('click', hideLinkConceptModal);
+    if (cancelLinkBtn) cancelLinkBtn.addEventListener('click', hideLinkConceptModal);
+    if (linkConceptBackdrop) linkConceptBackdrop.addEventListener('click', hideLinkConceptModal);
+    if (confirmLinkBtn) confirmLinkBtn.addEventListener('click', handleIntegrateConcept);
+    if (newConceptInput) {
+        newConceptInput.addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') handleIntegrateConcept();
         });
     }
 
@@ -256,6 +282,86 @@ async function handleDeepDive(label, desc) {
     } catch (e) {
         console.error(e);
         UI.renderDeepDiveError(e);
+    }
+}
+
+// Graph Control Handlers
+function handleToggleLayout() {
+    const newDirection = toggleLayoutDirection();
+    const btn = document.getElementById('toggle-layout-btn');
+    if (btn) {
+        const label = btn.querySelector('span');
+        if (label) {
+            label.textContent = newDirection === 'TB' ? '横向布局' : '纵向布局';
+        }
+    }
+}
+
+function handleFormatGraph() {
+    formatGraph();
+}
+
+function showLinkConceptModal() {
+    const modal = document.getElementById('link-concept-modal');
+    const input = document.getElementById('new-concept-input');
+    if (modal) {
+        modal.classList.remove('hidden');
+        if (input) {
+            input.value = '';
+            input.focus();
+        }
+    }
+}
+
+function hideLinkConceptModal() {
+    const modal = document.getElementById('link-concept-modal');
+    if (modal) {
+        modal.classList.add('hidden');
+    }
+}
+
+async function handleIntegrateConcept() {
+    const input = document.getElementById('new-concept-input');
+    const concept = input?.value.trim();
+
+    if (!concept) {
+        alert('请输入要关联的概念');
+        return;
+    }
+
+    // Get existing nodes from current graph
+    const existingNodes = state.currentGraphData?.nodes?.map(n => ({
+        id: n.id,
+        label: n.label,
+        description: n.description || ''
+    })) || [];
+
+    if (existingNodes.length === 0) {
+        alert('当前图谱为空，请先分析一个内容');
+        return;
+    }
+
+    UI.setLoading('link-modal-loading', true);
+    UI.setButtonLoading('confirm-link-btn', true);
+
+    try {
+        const result = await API.integrateConcept({
+            new_concept: concept,
+            existing_nodes: existingNodes
+        });
+
+        if (result.success && result.data) {
+            addLinkedConcept(result.data);
+            hideLinkConceptModal();
+        } else {
+            alert('关联失败: ' + (result.error || result.detail || '未知错误'));
+        }
+    } catch (e) {
+        console.error(e);
+        alert('关联失败: ' + e.message);
+    } finally {
+        UI.setLoading('link-modal-loading', false);
+        UI.setButtonLoading('confirm-link-btn', false);
     }
 }
 

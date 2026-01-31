@@ -119,3 +119,92 @@ def generate_node_details(node_label: str, context: str) -> NodeDetails:
     """
     provider = _get_provider()
     return provider.generate_node_details(node_label, context)
+
+
+def integrate_concept(new_concept: str, existing_nodes: List[dict]) -> dict:
+    """
+    Analyze how a new concept relates to existing graph nodes
+
+    Args:
+        new_concept: The new concept to integrate
+        existing_nodes: List of existing nodes with id, label, description
+
+    Returns:
+        dict with 'node' and 'edges' representing the new concept and its relationships
+    """
+    provider = _get_provider()
+    
+    # Build the prompt for integration analysis
+    nodes_text = "\n".join([
+        f"- {n['label']} (id: {n['id']}): {n.get('description', 'No description')}"
+        for n in existing_nodes
+    ])
+    
+    prompt = f"""你是一位知识架构专家。用户想要将一个新概念关联到现有知识图谱中。
+
+新概念: {new_concept}
+
+现有图谱节点:
+{nodes_text}
+
+任务:
+1. 分析新概念与现有节点的关系
+2. 创建新节点表示这个概念
+3. 建立适当的边连接到相关的现有节点
+
+返回严格的 JSON 格式:
+{{
+  "node": {{
+    "id": "linked_1",
+    "label": "{new_concept}",
+    "description": "对这个概念的简短描述",
+    "reason": "为什么这个概念与图谱相关"
+  }},
+  "edges": [
+    {{
+      "source": "linked_1",
+      "target": "现有节点id",
+      "type": "relates_to",
+      "reason": "关系说明"
+    }}
+  ]
+}}
+
+注意:
+- source 应该是新节点 "linked_1"，target 是现有节点的 id
+- 只连接真正相关的节点，不要强行建立关系
+- 如果找不到明显相关的节点，edges 可以为空数组
+- type 可以是: relates_to, depends_on, supports, implements
+"""
+    
+    # Use the provider to generate integration
+    import json
+    result = provider.generate_raw(prompt)
+    
+    # Parse the JSON response
+    try:
+        # Clean up the response (remove markdown code fences if present)
+        result = result.strip()
+        if result.startswith("```json"):
+            result = result[7:]
+        if result.startswith("```"):
+            result = result[3:]
+        if result.endswith("```"):
+            result = result[:-3]
+        result = result.strip()
+        
+        data = json.loads(result)
+        return data
+    except json.JSONDecodeError as e:
+        logger.error(f"Failed to parse integration response: {e}")
+        logger.error(f"Raw response: {result}")
+        # Return a basic structure
+        return {
+            "node": {
+                "id": "linked_1",
+                "label": new_concept,
+                "description": f"用户添加的概念: {new_concept}",
+                "reason": "用户手动关联"
+            },
+            "edges": []
+        }

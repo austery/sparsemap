@@ -33,13 +33,13 @@ export async function fetchHistoryItem(id) {
 export async function deleteHistoryItem(id) {
     const response = await fetch(`${API_BASE}/api/history/${id}`, { method: 'DELETE' });
     if (!response.ok) {
-         let data;
-         try {
+        let data;
+        try {
             data = await response.json();
-         } catch(e) {
+        } catch (e) {
             throw new Error(`HTTP ${response.status} ${response.statusText}`);
-         }
-         throw new Error(data.detail || 'Failed to delete');
+        }
+        throw new Error(data.detail || 'Failed to delete');
     }
     return true;
 }
@@ -68,6 +68,15 @@ export async function addUrl(url) {
 export async function fetchNodeDetails(payload) {
     // payload: { node_label, node_description, node_context }
     return fetchJson(`${API_BASE}/api/node-details`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload)
+    });
+}
+
+export async function integrateConcept(payload) {
+    // payload: { new_concept: string, existing_nodes: array }
+    return fetchJson(`${API_BASE}/api/integrate-concept`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload)

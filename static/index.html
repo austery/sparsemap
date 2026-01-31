@@ -79,6 +79,37 @@
                 </button>
                 <h2>知识图谱</h2>
             </div>
+
+            <!-- Graph Control Toolbar -->
+            <div class="graph-controls">
+                <span class="control-label">图谱控制</span>
+                <button id="toggle-layout-btn" class="control-btn" title="切换布局方向">
+                    <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+                        <path d="M2 4H14M2 8H10M2 12H14" stroke="currentColor" stroke-width="1.5"
+                            stroke-linecap="round" />
+                    </svg>
+                    <span>横向布局</span>
+                </button>
+                <button id="format-graph-btn" class="control-btn" title="重新格式化图谱">
+                    <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+                        <path d="M2 2L14 2M2 8L14 8M2 14L14 14" stroke="currentColor" stroke-width="1.5"
+                            stroke-linecap="round" />
+                        <circle cx="5" cy="2" r="1.5" fill="currentColor" />
+                        <circle cx="11" cy="8" r="1.5" fill="currentColor" />
+                        <circle cx="8" cy="14" r="1.5" fill="currentColor" />
+                    </svg>
+                    <span>格式化</span>
+                </button>
+                <button id="link-concept-btn" class="control-btn accent" title="关联新概念">
+                    <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+                        <path
+                            d="M6 10L10 6M7 5H5C3.89543 5 3 5.89543 3 7V7C3 8.10457 3.89543 9 5 9H6M10 7H11C12.1046 7 13 7.89543 13 9V9C13 10.1046 12.1046 11 11 11H10"
+                            stroke="currentColor" stroke-width="1.5" stroke-linecap="round" />
+                    </svg>
+                    <span>关联新概念</span>
+                </button>
+            </div>
+
             <button id="add-url-btn" class="btn-secondary">
                 <svg width="18" height="18" viewBox="0 0 18 18" fill="none">
                     <path d="M9 3V15M3 9H15" stroke="currentColor" stroke-width="2" stroke-linecap="round" />
@@ -128,6 +159,34 @@
             <div class="modal-footer">
                 <button id="cancel-btn" class="btn-secondary">取消</button>
                 <button id="confirm-add-btn" class="btn-primary">添加</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 关联新概念 对话框 -->
+    <div id="link-concept-modal" class="modal hidden">
+        <div class="modal-backdrop" id="link-concept-backdrop"></div>
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>关联新概念</h3>
+                <button id="close-link-modal" class="icon-btn small">
+                    <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+                        <path d="M12 4L4 12M4 4L12 12" stroke="currentColor" stroke-width="2" stroke-linecap="round" />
+                    </svg>
+                </button>
+            </div>
+            <div class="modal-body">
+                <label class="modal-label">新发现的概念</label>
+                <input type="text" id="new-concept-input" placeholder="例如：MCP" autocomplete="off">
+                <p class="modal-hint">输入你新发现的概念，系统会自动分析它与现有图谱的关系</p>
+                <div id="link-modal-loading" class="loading hidden">
+                    <div class="spinner"></div>
+                    <p>正在分析概念关联...</p>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button id="cancel-link-btn" class="btn-secondary">取消</button>
+                <button id="confirm-link-btn" class="btn-primary">关联</button>
             </div>
         </div>
     </div>

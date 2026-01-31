@@ -110,3 +110,45 @@ class DetailsRequest(BaseModel):
 class URLInput(BaseModel):
     """URL input for add-url endpoint"""
     url: str
+
+
+class ExistingNode(BaseModel):
+    """Simplified node info for integrate-concept endpoint"""
+    id: str
+    label: str
+    description: Optional[str] = None
+
+
+class IntegrateConceptRequest(BaseModel):
+    """Request for integrate-concept endpoint"""
+    new_concept: str
+    existing_nodes: List[ExistingNode]
+
+
+class LinkedNode(BaseModel):
+    """New node created from linking a concept"""
+    id: str
+    label: str
+    description: Optional[str] = None
+    reason: Optional[str] = None
+
+
+class LinkedEdge(BaseModel):
+    """Edge connecting linked concept to existing nodes"""
+    source: str
+    target: str
+    type: str = "relates_to"
+    reason: Optional[str] = None
+
+
+class IntegrateConceptData(BaseModel):
+    """Data returned from integrate-concept"""
+    node: LinkedNode
+    edges: List[LinkedEdge]
+
+
+class IntegrateConceptResponse(BaseModel):
+    """Response for integrate-concept endpoint"""
+    success: bool
+    data: Optional[IntegrateConceptData] = None
+    error: Optional[str] = None

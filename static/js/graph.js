@@ -2,6 +2,54 @@
 import { state, setCy, setGraphData } from './state.js';
 import { showNodeInfo, hideNodeInfo } from './ui.js';
 
+// Layout direction state: 'TB' (top-bottom) or 'LR' (left-right)
+let layoutDirection = 'TB';
+
+export function getLayoutDirection() {
+    return layoutDirection;
+}
+
+export function toggleLayoutDirection() {
+    layoutDirection = layoutDirection === 'TB' ? 'LR' : 'TB';
+    if (state.cy && state.cy.nodes().length > 0) {
+        runLayout();
+    }
+    return layoutDirection;
+}
+
+export function formatGraph() {
+    if (state.cy && state.cy.nodes().length > 0) {
+        runLayout();
+    }
+}
+
+function runLayout() {
+    const cy = state.cy;
+    if (!cy) return;
+
+    try {
+        cy.layout({
+            name: 'dagre',
+            rankDir: layoutDirection,
+            spacingFactor: 1.2,
+            padding: 30,
+            animate: true,
+            animationDuration: 500
+        }).run();
+
+        setTimeout(() => cy.fit(cy.elements(), 50), 550);
+    } catch (e) {
+        console.warn('布局算法失败，使用 grid 布局:', e);
+        const nodeCount = cy.nodes().length;
+        cy.layout({
+            name: 'grid',
+            rows: nodeCount > 0 ? Math.ceil(Math.sqrt(nodeCount)) : 1,
+            cols: nodeCount > 0 ? Math.ceil(Math.sqrt(nodeCount)) : 1,
+            padding: 30
+        }).run();
+    }
+}
+
 export function initCytoscape() {
     const container = document.getElementById('cy');
     if (!container) {
@@ -54,6 +102,17 @@ export function initCytoscape() {
                     'border-color': '#2dd4bf',
                     'shadow-color': '#2dd4bf',
                     'font-size': '12px'
+                }
+            },
+            {
+                selector: 'node[type="linked"]',
+                style: {
+                    'background-color': '#854d0e', /* Amber/Brown */
+                    'border-color': '#fbbf24',
+                    'border-style': 'dashed',
+                    'border-width': 3,
+                    'shadow-color': '#fbbf24',
+                    'font-size': '13px'
                 }
             },
             {
@@ -208,4 +267,62 @@ export function mergeGraphData(newData) {
     });
 
     renderGraph(currentGraphData);
+}
+
+export function addLinkedConcept(conceptData) {
+    // conceptData: { node: {...}, edges: [...] }
+    if (!state.cy || !state.currentGraphData) {
+        console.error('Cannot add linked concept: graph not initialized');
+        return;
+    }
+
+    const cy = state.cy;
+    const graphData = state.currentGraphData;
+
+    // Add node with special "linked" type for styling
+    const newNode = {
+        ...conceptData.node,
+        type: 'linked'
+    };
+
+    // Check if node already exists
+    if (!graphData.nodes.find(n => n.id === newNode.id)) {
+        graphData.nodes.push(newNode);
+        cy.add({
+            group: 'nodes',
+            data: {
+                id: newNode.id,
+                label: newNode.label,
+                type: 'linked',
+                description: newNode.description || '',
+                reason: newNode.reason || '',
+                source: 'linked'
+            }
+        });
+    }
+
+    // Add edges
+    const existingEdgeIds = new Set(
+        graphData.edges.map(e => `${e.source}-${e.target}`)
+    );
+
+    conceptData.edges.forEach(edge => {
+        const edgeId = `${edge.source}-${edge.target}`;
+        if (!existingEdgeIds.has(edgeId)) {
+            graphData.edges.push(edge);
+            cy.add({
+                group: 'edges',
+                data: {
+                    id: `e${edge.source}-${edge.target}`,
+                    source: edge.source,
+                    target: edge.target,
+                    reason: edge.reason || '',
+                    type: edge.type || 'relates_to'
+                }
+            });
+        }
+    });
+
+    // Re-run layout
+    runLayout();
 }

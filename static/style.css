@@ -1,23 +1,27 @@
 /* Logic Linker - Deep Space Theme */
 
 :root {
-    --bg-deep: #130f26; /* Deep purple/black */
+    --bg-deep: #130f26;
+    /* Deep purple/black */
     --bg-panel: rgba(30, 27, 56, 0.7);
     --bg-glass: rgba(45, 40, 85, 0.4);
-    
+
     --text-primary: #ffffff;
     --text-secondary: #a9a6c5;
-    
-    --accent-primary: #8b5cf6; /* Violet */
-    --accent-secondary: #06b6d4; /* Cyan */
-    --accent-warning: #f59e0b; /* Amber */
-    
+
+    --accent-primary: #8b5cf6;
+    /* Violet */
+    --accent-secondary: #06b6d4;
+    /* Cyan */
+    --accent-warning: #f59e0b;
+    /* Amber */
+
     --gradient-bg: linear-gradient(135deg, #130f26 0%, #2e1065 100%);
     --gradient-card: linear-gradient(180deg, rgba(255, 255, 255, 0.08) 0%, rgba(255, 255, 255, 0.03) 100%);
-    
+
     --shadow-glow: 0 0 20px rgba(139, 92, 246, 0.3);
     --border-glass: 1px solid rgba(255, 255, 255, 0.1);
-    
+
     --radius-sm: 8px;
     --radius-md: 16px;
     --radius-lg: 24px;
@@ -36,7 +40,10 @@ body {
     background-image: var(--gradient-bg);
     color: var(--text-primary);
     min-height: 100vh;
-    overflow: hidden; /* App-like feel */
+    overflow: hidden;
+    /* App-like feel */
+    color-scheme: dark;
+    /* Force dark mode for form elements */
 }
 
 /* Screen Management */
@@ -101,21 +108,43 @@ body {
     position: relative;
 }
 
-input, textarea {
+input,
+textarea {
     width: 100%;
-    background: rgba(20, 20, 30, 0.6);
+    background: rgba(20, 20, 30, 0.9) !important;
+    background-color: rgba(20, 20, 30, 0.9) !important;
     border: var(--border-glass);
-    color: #fff;
+    color: #fff !important;
     padding: 16px;
     border-radius: var(--radius-sm);
     font-size: 16px;
     transition: all 0.3s;
+    -webkit-appearance: none;
+    -moz-appearance: none;
+    appearance: none;
 }
 
-input:focus, textarea:focus {
+/* Override browser autofill styles */
+input:-webkit-autofill,
+input:-webkit-autofill:hover,
+input:-webkit-autofill:focus,
+textarea:-webkit-autofill {
+    -webkit-text-fill-color: #fff !important;
+    -webkit-box-shadow: 0 0 0 30px rgba(20, 20, 30, 0.9) inset !important;
+    background-color: rgba(20, 20, 30, 0.9) !important;
+}
+
+input:focus,
+textarea:focus {
     outline: none;
     border-color: var(--accent-primary);
     box-shadow: 0 0 15px rgba(139, 92, 246, 0.2);
+}
+
+input::placeholder,
+textarea::placeholder {
+    color: var(--text-secondary);
+    opacity: 0.8;
 }
 
 /* Buttons */
@@ -147,12 +176,16 @@ input:focus, textarea:focus {
     cursor: pointer;
     transition: background 0.2s;
 }
-.btn-secondary:hover { background: rgba(255, 255, 255, 0.2); }
+
+.btn-secondary:hover {
+    background: rgba(255, 255, 255, 0.2);
+}
 
 /* Canvas Screen */
 #canvas-screen {
     display: flex;
-    flex-direction: row; /* Sidebar layout */
+    flex-direction: row;
+    /* Sidebar layout */
     height: 100vh;
 }
 
@@ -175,7 +208,7 @@ input:focus, textarea:focus {
     right: 0;
     height: 100%;
     z-index: 20;
-    box-shadow: -10px 0 30px rgba(0,0,0,0.3);
+    box-shadow: -10px 0 30px rgba(0, 0, 0, 0.3);
 }
 
 .node-info-panel.visible {
@@ -399,12 +432,23 @@ input:focus, textarea:focus {
     animation: spin 1s linear infinite;
 }
 
-.hidden { display: none !important; }
+.hidden {
+    display: none !important;
+}
 
-@keyframes spin { to { transform: rotate(360deg); } }
+@keyframes spin {
+    to {
+        transform: rotate(360deg);
+    }
+}
 
 /* Tab Buttons */
-.input-tabs { display: flex; gap: 10px; margin-bottom: 20px; }
+.input-tabs {
+    display: flex;
+    gap: 10px;
+    margin-bottom: 20px;
+}
+
 .tab-btn {
     flex: 1;
     text-align: center;
@@ -413,6 +457,7 @@ input:focus, textarea:focus {
     cursor: pointer;
     border-bottom: 2px solid transparent;
 }
+
 .tab-btn.active {
     color: white;
     border-bottom-color: var(--accent-primary);
@@ -441,8 +486,8 @@ input:focus, textarea:focus {
 }
 
 body {
-    font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Display', 'Segoe UI', 
-                 'Helvetica Neue', Arial, sans-serif;
+    font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Display', 'Segoe UI',
+        'Helvetica Neue', Arial, sans-serif;
     background: var(--bg-primary);
     color: var(--text-primary);
     line-height: 1.6;
@@ -681,7 +726,9 @@ textarea {
 }
 
 @keyframes spin {
-    to { transform: rotate(360deg); }
+    to {
+        transform: rotate(360deg);
+    }
 }
 
 /* 画布界面 */
@@ -838,6 +885,7 @@ textarea {
         transform: translateY(20px);
         opacity: 0;
     }
+
     to {
         transform: translateY(0);
         opacity: 1;
@@ -888,19 +936,93 @@ textarea {
     h1 {
         font-size: 32px;
     }
-    
+
     .input-group {
         flex-direction: column;
     }
-    
+
     .node-info {
         width: calc(100% - 48px);
         right: 24px;
         left: 24px;
     }
-    
+
     .modal-content {
         padding: 24px;
     }
+
+    .graph-controls {
+        display: none;
+        /* Hide on mobile - too cramped */
+    }
 }
 
+/* Graph Control Toolbar */
+.graph-controls {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 8px 16px;
+    background: var(--bg-glass);
+    border: var(--border-glass);
+    border-radius: var(--radius-md);
+    backdrop-filter: blur(10px);
+}
+
+.control-label {
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--text-secondary);
+    margin-right: 4px;
+}
+
+.control-btn {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 8px 14px;
+    font-size: 13px;
+    font-weight: 500;
+    color: var(--text-primary);
+    background: rgba(255, 255, 255, 0.08);
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    border-radius: var(--radius-sm);
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.control-btn:hover {
+    background: rgba(255, 255, 255, 0.15);
+    border-color: rgba(255, 255, 255, 0.2);
+    transform: translateY(-1px);
+}
+
+.control-btn.accent {
+    background: linear-gradient(135deg, var(--accent-primary) 0%, #6366f1 100%);
+    border-color: transparent;
+    box-shadow: 0 2px 10px rgba(139, 92, 246, 0.3);
+}
+
+.control-btn.accent:hover {
+    box-shadow: 0 4px 15px rgba(139, 92, 246, 0.5);
+}
+
+.control-btn svg {
+    flex-shrink: 0;
+}
+
+/* Modal Label and Hint */
+.modal-label {
+    display: block;
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--text-secondary);
+    margin-bottom: 8px;
+}
+
+.modal-hint {
+    font-size: 13px;
+    color: var(--text-secondary);
+    margin-top: 8px;
+    opacity: 0.8;
+}

@@ -16,10 +16,15 @@ from sparsemap.domain.models import (
     DetailsRequest,
     URLInput,
     HistoryListResponse,
+    IntegrateConceptRequest,
+    IntegrateConceptResponse,
+    IntegrateConceptData,
+    LinkedNode,
+    LinkedEdge,
 )
 from sparsemap.infra.db import get_session
 from sparsemap.services.extractor import fetch_url_content, hash_url
-from sparsemap.services.llm import analyze_contents, generate_node_details
+from sparsemap.services.llm import analyze_contents, generate_node_details, integrate_concept
 from sparsemap.services.repository import (
     get_analysis_by_hash,
     get_analysis_by_id,
@@ -198,3 +203,58 @@ async def add_url(request: URLInput, session: Session = Depends(get_session)) ->
         save_analysis(session, url_hash, graph, title=title, original_url=request.url, source_type="url")
 
     return AnalyzeResponse(success=True, data=graph, sources=["new_url"])
+
+
+@router.post("/integrate-concept", response_model=IntegrateConceptResponse)
+async def integrate_concept_endpoint(request: IntegrateConceptRequest) -> IntegrateConceptResponse:
+    """
+    Integrate a new concept into the existing knowledge graph.
+    Uses AI to analyze relationships between the new concept and existing nodes.
+    """
+    if not request.new_concept.strip():
+        raise HTTPException(status_code=400, detail="概念名称不能为空")
+    
+    if not request.existing_nodes:
+        raise HTTPException(status_code=400, detail="需要至少一个现有节点")
+    
+    try:
+        # Convert ExistingNode models to dicts for the LLM function
+        existing_nodes_dicts = [
+            {
+                "id": node.id,
+                "label": node.label,
+                "description": node.description or ""
+            }
+            for node in request.existing_nodes
+        ]
+        
+        # Call LLM to analyze relationships
+        result = integrate_concept(request.new_concept.strip(), existing_nodes_dicts)
+        
+        # Parse and validate the result
+        node_data = result.get("node", {})
+        edges_data = result.get("edges", [])
+        
+        linked_node = LinkedNode(
+            id=node_data.get("id", "linked_1"),
+            label=node_data.get("label", request.new_concept),
+            description=node_data.get("description"),
+            reason=node_data.get("reason")
+        )
+        
+        linked_edges = [
+            LinkedEdge(
+                source=edge.get("source", "linked_1"),
+                target=edge.get("target"),
+                type=edge.get("type", "relates_to"),
+                reason=edge.get("reason")
+            )
+            for edge in edges_data
+            if edge.get("target")  # Only include edges with valid targets
+        ]
+        
+        data = IntegrateConceptData(node=linked_node, edges=linked_edges)
+        return IntegrateConceptResponse(success=True, data=data)
+        
+    except Exception as exc:
+        raise HTTPException(status_code=500, detail=f"关联失败: {str(exc)}") from exc
