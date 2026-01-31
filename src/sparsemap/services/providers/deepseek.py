@@ -1,4 +1,5 @@
 """DeepSeek Provider Implementation (OpenAI-compatible)"""
+
 from __future__ import annotations
 
 import json
@@ -38,12 +39,14 @@ class DeepSeekProvider(LLMProvider):
         self.max_retries = max_retries
 
         self.client = OpenAI(
-            base_url=base_url, 
+            base_url=base_url,
             api_key=api_key,
             timeout=180.0,  # 3 minutes timeout for complex prompts
             max_retries=0,  # Disable OpenAI SDK retries (we handle it ourselves)
         )
-        logger.info(f"✓ DeepSeekProvider initialized (model: {model}, base_url: {base_url})")
+        logger.info(
+            f"✓ DeepSeekProvider initialized (model: {model}, base_url: {base_url})"
+        )
 
     def generate_graph(self, contents: List[dict], prompt: str) -> Graph:
         """Generate knowledge graph using DeepSeek API"""
@@ -80,20 +83,20 @@ class DeepSeekProvider(LLMProvider):
                     temperature=0.3,  # Same as linklog
                     max_tokens=self.max_tokens,
                 )
-                
+
                 # Log token usage if available
-                if hasattr(response, 'usage'):
+                if hasattr(response, "usage"):
                     usage = response.usage
                     logger.info(
                         f"DeepSeek tokens: prompt={usage.prompt_tokens}, "
                         f"completion={usage.completion_tokens}, total={usage.total_tokens}"
                     )
-                
+
                 content = response.choices[0].message.content or ""
                 logger.info(f"Response length: {len(content)} chars")
-                
+
                 json_payload = extract_json(content)
-                
+
                 # Use aggressive repair for DeepSeek
                 try:
                     data = repair_json(json_payload)
@@ -102,12 +105,14 @@ class DeepSeekProvider(LLMProvider):
                     # Log the problematic JSON for debugging
                     logger.debug(f"Failed JSON (first 500 chars): {json_payload[:500]}")
                     raise
-                
+
                 return Graph.model_validate(data)
 
             except (json.JSONDecodeError, ValidationError) as exc:
                 last_error = exc
-                logger.warning(f"DeepSeek response invalid on attempt {attempt + 1}: {exc}")
+                logger.warning(
+                    f"DeepSeek response invalid on attempt {attempt + 1}: {exc}"
+                )
 
             except Exception as exc:
                 last_error = exc
@@ -163,18 +168,22 @@ class DeepSeekProvider(LLMProvider):
             )
             content = response.choices[0].message.content or ""
             if not content:
-                logger.warning(f"DeepSeek returned empty content for node: {node_label}")
+                logger.warning(
+                    f"DeepSeek returned empty content for node: {node_label}"
+                )
                 return NodeDetails(
                     definition="无法生成详细信息 (AI 响应为空)",
                     analogy="可能由于内容安全策略，无法显示。",
                     importance="请稍后重试。",
                     actionable_step="无",
-                    keywords=[]
+                    keywords=[],
                 )
 
             data = repair_json(extract_json(content))
             return NodeDetails.model_validate(data)
 
         except Exception as exc:
-            logger.exception(f"DeepSeek node details generation failed for {node_label}")
+            logger.exception(
+                f"DeepSeek node details generation failed for {node_label}"
+            )
             raise ValueError(f"DeepSeek 生成节点详情失败: {exc}")

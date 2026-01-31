@@ -8,11 +8,15 @@ from sparsemap.domain.models import AnalysisResult, Graph, HistoryItem
 
 
 def get_analysis_by_hash(session: Session, url_hash: str) -> AnalysisResult | None:
-    return session.exec(select(AnalysisResult).where(AnalysisResult.url_hash == url_hash)).first()
+    return session.exec(
+        select(AnalysisResult).where(AnalysisResult.url_hash == url_hash)
+    ).first()
 
 
 def get_analysis_by_id(session: Session, analysis_id: int) -> AnalysisResult | None:
-    return session.exec(select(AnalysisResult).where(AnalysisResult.id == analysis_id)).first()
+    return session.exec(
+        select(AnalysisResult).where(AnalysisResult.id == analysis_id)
+    ).first()
 
 
 def save_analysis(
@@ -36,7 +40,9 @@ def save_analysis(
     return record
 
 
-def list_analyses(session: Session, limit: int = 50, offset: int = 0) -> List[HistoryItem]:
+def list_analyses(
+    session: Session, limit: int = 50, offset: int = 0
+) -> List[HistoryItem]:
     """List analysis history, most recent first"""
     results = session.exec(
         select(AnalysisResult)
@@ -64,6 +70,7 @@ def list_analyses(session: Session, limit: int = 50, offset: int = 0) -> List[Hi
 def count_analyses(session: Session) -> int:
     """Count total analyses"""
     from sqlalchemy import func
+
     return session.exec(select(func.count(AnalysisResult.id))).one()
 
 

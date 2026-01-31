@@ -21,7 +21,9 @@ async def fetch_url_content(url: str) -> Tuple[str, str]:
         "Accept-Language": "en-US,en;q=0.9,zh-CN;q=0.8,zh;q=0.7",
     }
     try:
-        async with httpx.AsyncClient(timeout=15.0, headers=headers, follow_redirects=True) as client:
+        async with httpx.AsyncClient(
+            timeout=15.0, headers=headers, follow_redirects=True
+        ) as client:
             response = await client.get(url)
             response.raise_for_status()
     except httpx.HTTPStatusError as exc:
@@ -35,13 +37,17 @@ async def fetch_url_content(url: str) -> Tuple[str, str]:
             detail=f"无法抓取 URL 内容: HTTP {exc.response.status_code}",
         ) from exc
     except httpx.HTTPError as exc:
-        raise HTTPException(status_code=400, detail=f"无法抓取 URL 内容: {exc}") from exc
+        raise HTTPException(
+            status_code=400, detail=f"无法抓取 URL 内容: {exc}"
+        ) from exc
 
     soup = BeautifulSoup(response.text, "html.parser")
     for tag in soup(["script", "style", "nav", "header", "footer"]):
         tag.decompose()
 
-    main_content = soup.find("main") or soup.find("article") or soup.find("div", class_="content")
+    main_content = (
+        soup.find("main") or soup.find("article") or soup.find("div", class_="content")
+    )
     if main_content:
         text = main_content.get_text(separator="\n", strip=True)
     else:
@@ -55,6 +61,8 @@ async def fetch_url_content(url: str) -> Tuple[str, str]:
     cleaned = "\n".join(lines)
 
     if len(cleaned) < settings.extractor_min_chars:
-        raise HTTPException(status_code=400, detail="抓取内容过短，请提供更完整的内容。")
+        raise HTTPException(
+            status_code=400, detail="抓取内容过短，请提供更完整的内容。"
+        )
 
     return cleaned[: settings.extractor_max_chars], hash_url(url)

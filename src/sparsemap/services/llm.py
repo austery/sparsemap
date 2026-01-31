@@ -106,6 +106,8 @@ def analyze_contents(contents: List[dict]) -> Graph:
     provider = _get_provider()
     prompt = build_prompt(contents)
     return provider.generate_graph(contents, prompt)
+
+
 def generate_node_details(node_label: str, context: str) -> NodeDetails:
     """
     Generate detailed explanation for a node using configured LLM provider
@@ -133,13 +135,15 @@ def integrate_concept(new_concept: str, existing_nodes: List[dict]) -> dict:
         dict with 'node' and 'edges' representing the new concept and its relationships
     """
     provider = _get_provider()
-    
+
     # Build the prompt for integration analysis
-    nodes_text = "\n".join([
-        f"- {n['label']} (id: {n['id']}): {n.get('description', 'No description')}"
-        for n in existing_nodes
-    ])
-    
+    nodes_text = "\n".join(
+        [
+            f"- {n['label']} (id: {n['id']}): {n.get('description', 'No description')}"
+            for n in existing_nodes
+        ]
+    )
+
     prompt = f"""你是一位知识架构专家。用户想要将一个新概念关联到现有知识图谱中。
 
 新概念: {new_concept}
@@ -176,11 +180,12 @@ def integrate_concept(new_concept: str, existing_nodes: List[dict]) -> dict:
 - 如果找不到明显相关的节点，edges 可以为空数组
 - type 可以是: relates_to, depends_on, supports, implements
 """
-    
+
     # Use the provider to generate integration
     import json
+
     result = provider.generate_raw(prompt)
-    
+
     # Parse the JSON response
     try:
         # Clean up the response (remove markdown code fences if present)
@@ -192,7 +197,7 @@ def integrate_concept(new_concept: str, existing_nodes: List[dict]) -> dict:
         if result.endswith("```"):
             result = result[:-3]
         result = result.strip()
-        
+
         data = json.loads(result)
         return data
     except json.JSONDecodeError as e:
@@ -204,7 +209,7 @@ def integrate_concept(new_concept: str, existing_nodes: List[dict]) -> dict:
                 "id": "linked_1",
                 "label": new_concept,
                 "description": f"用户添加的概念: {new_concept}",
-                "reason": "用户手动关联"
+                "reason": "用户手动关联",
             },
-            "edges": []
+            "edges": [],
         }

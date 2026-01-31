@@ -1,4 +1,5 @@
 """LLM utility functions"""
+
 import json
 import re
 
@@ -35,7 +36,7 @@ def fix_json(payload: str) -> str:
         Fixed JSON string
     """
     # Remove trailing commas before closing brackets/braces
-    payload = re.sub(r',(\s*[}\]])', r'\1', payload)
+    payload = re.sub(r",(\s*[}\]])", r"\1", payload)
 
     # Try basic fixes first
     payload = payload.replace(",]", "]").replace(",}", "}")
@@ -62,7 +63,7 @@ def escape_newlines_in_strings(payload: str) -> str:
             i += 1
             continue
 
-        if char == '\\':
+        if char == "\\":
             result.append(char)
             escape_next = True
             i += 1
@@ -74,25 +75,25 @@ def escape_newlines_in_strings(payload: str) -> str:
             i += 1
             continue
 
-        if in_string and char == '\n':
-            result.append('\\n')
+        if in_string and char == "\n":
+            result.append("\\n")
             i += 1
             continue
 
-        if in_string and char == '\r':
-            result.append('\\r')
+        if in_string and char == "\r":
+            result.append("\\r")
             i += 1
             continue
 
-        if in_string and char == '\t':
-            result.append('\\t')
+        if in_string and char == "\t":
+            result.append("\\t")
             i += 1
             continue
 
         result.append(char)
         i += 1
 
-    return ''.join(result)
+    return "".join(result)
 
 
 def repair_json(payload: str) -> dict:
@@ -130,7 +131,7 @@ def repair_json(payload: str) -> dict:
         pass
 
     # Try extracting first complete JSON object
-    json_match = re.search(r'\{.*\}', payload, re.DOTALL)
+    json_match = re.search(r"\{.*\}", payload, re.DOTALL)
     if json_match:
         try:
             extracted = json_match.group(0)

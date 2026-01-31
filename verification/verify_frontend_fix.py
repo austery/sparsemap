@@ -1,5 +1,6 @@
 from playwright.sync_api import sync_playwright, expect
 
+
 def verify_frontend_fix():
     with sync_playwright() as p:
         browser = p.chromium.launch(headless=True)
@@ -32,6 +33,7 @@ def verify_frontend_fix():
             print(f"Verification failed: {e}")
         finally:
             browser.close()
+
 
 if __name__ == "__main__":
     verify_frontend_fix()

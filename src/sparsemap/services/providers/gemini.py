@@ -1,4 +1,5 @@
 """Gemini Provider Implementation"""
+
 from __future__ import annotations
 
 import json
@@ -40,7 +41,7 @@ class GeminiProvider(LLMProvider):
 
         http_options = types.HttpOptions(baseUrl=base_url) if base_url else None
         self.client = genai.Client(api_key=api_key, http_options=http_options)
-        
+
         base_url_log = f", base_url: {base_url}" if base_url else ""
         logger.info(f"✓ GeminiProvider initialized (model: {model}{base_url_log})")
 
@@ -75,27 +76,33 @@ class GeminiProvider(LLMProvider):
                     ),
                 )
                 content = response.text
-                
+
                 # Use robust repair logic
                 try:
                     data = repair_json(extract_json(content))
                     return Graph.model_validate(data)
                 except ValueError as ve:
                     logger.error(f"JSON repair failed: {ve}")
-                    logger.error(f"❌ Failed Raw Content (Length: {len(content)}):\n{content}")
-                    
+                    logger.error(
+                        f"❌ Failed Raw Content (Length: {len(content)}):\n{content}"
+                    )
+
                     # Save debug files
                     with open("debug_gemini_prompt.txt", "w", encoding="utf-8") as f:
                         f.write(f"{system_instruction}\n\n{prompt}")
                     with open("debug_gemini_response.txt", "w", encoding="utf-8") as f:
                         f.write(content)
-                    logger.info("Saved debug files: debug_gemini_prompt.txt, debug_gemini_response.txt")
-                    
+                    logger.info(
+                        "Saved debug files: debug_gemini_prompt.txt, debug_gemini_response.txt"
+                    )
+
                     raise
 
             except (json.JSONDecodeError, ValidationError) as exc:
                 last_error = exc
-                logger.warning(f"Gemini response invalid on attempt {attempt + 1}: {exc}")
+                logger.warning(
+                    f"Gemini response invalid on attempt {attempt + 1}: {exc}"
+                )
 
             except Exception as exc:
                 last_error = exc
@@ -119,6 +126,7 @@ class GeminiProvider(LLMProvider):
         except Exception as exc:
             logger.exception("Gemini raw generation failed")
             raise ValueError(f"Gemini 生成失败: {exc}")
+
     def generate_node_details(self, node_label: str, context: str) -> NodeDetails:
         """Generate detailed explanation for a specific node"""
         system_instruction = """你是一位资深的教育专家。请为给定的知识点生成详细的解释卡片。
@@ -137,7 +145,7 @@ class GeminiProvider(LLMProvider):
   "actionable_step": "...",
   "keywords": ["key1", "key2"]
 }"""
-        
+
         prompt = f"知识点：{node_label}\n\n上下文/来源内容：\n{context}"
 
         try:
@@ -152,19 +160,21 @@ class GeminiProvider(LLMProvider):
             )
             content = response.text
             if not content:
-                logger.warning(f"Gemini returned empty content for node: {node_label}. Response: {response}")
+                logger.warning(
+                    f"Gemini returned empty content for node: {node_label}. Response: {response}"
+                )
                 # Fallback to avoid crash
                 return NodeDetails(
                     definition="无法生成详细信息 (AI 响应为空)",
                     analogy="可能由于内容安全策略，无法显示。",
                     importance="请稍后重试。",
                     actionable_step="无",
-                    keywords=[]
+                    keywords=[],
                 )
 
             data = repair_json(extract_json(content))
             return NodeDetails.model_validate(data)
-            
+
         except Exception as exc:
             logger.exception(f"Gemini node details generation failed for {node_label}")
             raise ValueError(f"Gemini 生成节点详情失败: {exc}")

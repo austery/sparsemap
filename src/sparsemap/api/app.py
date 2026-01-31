@@ -30,8 +30,10 @@ def create_app() -> FastAPI:
         def read_root():
             return FileResponse(str(static_dir / "index.html"), media_type="text/html")
     else:
+
         @app.get("/")
         def read_root():
             return {"status": "running"}
+
     app.include_router(analyze_router, prefix="/api")
     return app

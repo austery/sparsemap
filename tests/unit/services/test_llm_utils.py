@@ -1,5 +1,11 @@
 import pytest
-from sparsemap.services.llm_utils import extract_json, fix_json, escape_newlines_in_strings, repair_json
+from sparsemap.services.llm_utils import (
+    extract_json,
+    fix_json,
+    escape_newlines_in_strings,
+    repair_json,
+)
+
 
 class TestExtractJson:
     def test_extract_json_with_markdown_block(self):
@@ -17,6 +23,7 @@ class TestExtractJson:
     def test_extract_json_none(self):
         assert extract_json(None) == ""
 
+
 class TestFixJson:
     def test_fix_json_trailing_comma_dict(self):
         payload = '{"key": "value",}'
@@ -33,6 +40,7 @@ class TestFixJson:
         expected = '{"list": ["val"], "dict": {"k": "v"}}'
         assert fix_json(payload) == expected
 
+
 class TestEscapeNewlines:
     def test_escape_newlines_in_strings(self):
         payload = '{"key": "multi\nline"}'
@@ -42,6 +50,7 @@ class TestEscapeNewlines:
     def test_escape_newlines_no_change(self):
         payload = '{"key": "value"}'
         assert escape_newlines_in_strings(payload) == payload
+
 
 class TestRepairJson:
     def test_repair_json_valid(self):
@@ -62,7 +71,6 @@ class TestRepairJson:
         assert repair_json(payload) == {"key": "multi\nline"}
 
     def test_repair_json_failure(self):
-        payload = 'invalid json'
+        payload = "invalid json"
         with pytest.raises(ValueError, match="Unable to repair JSON"):
             repair_json(payload)
-
