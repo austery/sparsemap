@@ -1,58 +1,99 @@
-# AGENTS.md - SparseMap V1 Foundation Plan
+# AGENTS.md
 
-## 问题与目标
-基于提供的 Spec，将 SparseMap 从零搭建为“Foundation”级别的可演进项目：保留轻量前端，后端采用 FastAPI + SQLModel + Alembic，严格数据契约，并实现 ETL + LLM 校验补全（方案 B）。
+> **Context for AI Agents**
+> This file contains instructions, conventions, and context for AI agents working on this repository. Read this before proposing changes.
 
-## 参考项目现状（linklog）
-- 单体 FastAPI + 静态前端（Cytoscape）
-- LLM 调用与 JSON 修复逻辑
-- URL 抓取 + HTML 清洗
-- 无数据库与迁移体系
+## 1. Project Overview
+**SparseMap** is a high-signal knowledge graph extractor. It processes URL/text inputs using LLMs to generate directed graphs (`Node` + `Edge`) representing critical concepts and dependencies.
+- **Backend**: Python (FastAPI, SQLModel, PostgreSQL).
+- **Frontend**: Vanilla JS (ES Modules, Cytoscape.js), served statically.
+- **Goal**: "Steel thread" implementation—minimal dependencies, high stability, strict data contracts.
 
-## 方案假设与确认
-- LLM 策略：方案 B（基于文章内容 + 追加 suggested_best_practice 节点）
-- V1 含数据库与迁移（Postgres + SQLModel + Alembic）
-- 前端保持轻量 HTML/Cytoscape
-- 失败重试：LLM schema 校验失败重试 2 次
-- 代码结构：src/sparsemap 包布局
+## 2. Environment & Tooling
+*   **OS**: macOS (Darwin) / Linux
+*   **Python Manager**: `uv` (Required). Do not use `pip` or `poetry` directly.
+*   **JS Manager**: `bun` (Required). Do not use `npm` or `yarn`.
+*   **Database**: PostgreSQL.
+*   **Linting**: `Ruff` (Python), `Biome` (JS).
 
-## 工作计划
-- [ ] 1. 初始化工程与依赖
-  - 使用 uv init sparsemap --app（或等效结构）
-  - 配置 pyproject.toml（FastAPI, SQLModel, Alembic, httpx, bs4, openai, ruff 等）
-  - 创建 src/sparsemap 包结构与基础模块
+## 3. Directory Structure
+```text
+/
+├── src/sparsemap/       # Backend Application Package
+│   ├── api/             # FastAPI routes & app entry
+│   ├── core/            # Config & Logging
+│   ├── domain/          # Pydantic/SQLModel entities (Data Contract)
+│   ├── infra/           # DB Session & Engines
+│   └── services/        # Business Logic (ETL, LLM extraction)
+├── static/              # Frontend (No build step, raw ES modules)
+│   ├── js/              # State, UI, Graph Logic
+│   └── style.css        # CSS
+├── tests/               # Test Suite
+│   ├── unit/            # Python Unit Tests
+│   └── frontend/        # JS Unit Tests
+├── migrations/          # Alembic Migrations
+├── pyproject.toml       # Python Dependencies & Config
+├── biome.json           # JS Linter Config
+└── .pre-commit-config.yaml # Git Hooks
+```
 
-- [ ] 2. 定义领域模型与数据契约
-  - Pydantic/SQLModel：Node, Edge, Graph, AnalysisResult
-  - Enum：NodeType(main/dependency/suggested_best_practice), Priority(critical/optional)
-  - JSONB 存储与读写校验
+## 4. Operational Commands (The Source of Truth)
+Agents MUST use these exact commands to ensure consistency.
 
-- [ ] 3. 基础架构与配置
-  - core/config.py（环境变量/配置）
-  - core/logging.py（结构化日志最小实现）
-  - infra/db.py（SQLModel Session + 引擎）
-  - migrations 初始化（Alembic）
+### 📦 Installation
+```bash
+# Python
+uv sync
 
-- [ ] 4. ETL + LLM 服务实现
-  - services/extractor.py：抓取、清洗、长度校验
-  - services/llm.py：提示词 + schema 校验 + 失败重试 2 次
-  - 提示词加入“best practice 缺失补全”规则（type: suggested_best_practice）
+# Git Hooks (Crucial for CI)
+uv run pre-commit install --install-hooks
+```
 
-- [ ] 5. API 层与路由
-  - api/routes/analyze.py：/api/analyze
-  - 请求体支持 urls/texts
-  - 返回 graph + sources
-  - OpenAPI 自动文档
+### 🚀 Running the App
+```bash
+# Start Backend (Auto-reloads)
+uv run sparsemap
+# App will serve at http://localhost:8003
+```
 
-- [ ] 6. 前端最小化接入
-  - 复用 linklog 的静态页面结构（Cytoscape）
-  - 调整 API 地址与响应结构
+### 🧪 Testing
+**Run all tests before submitting changes.**
+```bash
+# Backend (pytest)
+uv run pytest
 
-- [ ] 7. 基础测试与运行
-  - 提供最小测试/检查脚本（可选）
-  - 启动指引与 README 更新
+# Frontend (bun test)
+bun test
+```
 
-## 说明与注意事项
-- 目标是“钢铁主线”：功能最小化，架构完整可演进
-- 优先复用 linklog 的成熟逻辑，但要迁移到分层架构
-- 任何数据写入前必须通过 Pydantic 校验
+### 🧹 Linting & Formatting
+**Fix style issues automatically.**
+```bash
+# Python (Ruff)
+uv run ruff check --fix .
+uv run ruff format .
+
+# JavaScript (Biome)
+bun check --write --unsafe ./static/js
+```
+
+### 🗄️ Database Migrations
+```bash
+# Create a new migration (after modifying models.py)
+uv run alembic revision --autogenerate -m "description_of_change"
+
+# Apply migrations
+uv run alembic upgrade head
+```
+
+## 5. Coding Conventions
+1.  **Strict Typing**: All Python code must have type hints. Pydantic models are the source of truth for data structures.
+2.  **No Frontend Build**: The frontend is "Vanilla JS". Do not introduce Webpack/Vite/React. Keep it simple, using native ES Modules.
+3.  **Testing**:
+    *   Python: `tests/unit` must mirror `src/` structure.
+    *   JS: Use `bun test`. Logic must be testable (separate logic from DOM where possible).
+4.  **Security**: Never commit secrets. Use `.env` (managed by `python-dotenv`).
+
+## 6. Known Constraints
+- **Graph Logic**: Layout is handled by Cytoscape (`dagre` or `grid`).
+- **LLM**: Currently supports OpenAI, DeepSeek, and Google Gemini via `services/llm_provider.py`.
