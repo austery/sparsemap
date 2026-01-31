@@ -1,12 +1,12 @@
 export const state = {
-    cy: null,
-    currentGraphData: null
+  cy: null,
+  currentGraphData: null,
 };
 
 export function setCy(instance) {
-    state.cy = instance;
+  state.cy = instance;
 }
 
 export function setGraphData(data) {
-    state.currentGraphData = data;
+  state.currentGraphData = data;
 }

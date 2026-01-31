@@ -6,7 +6,7 @@ try:
     # It might be a TypedDict or Pydantic model or dataclass
     try:
         print(inspect.signature(types.HttpOptions))
-    except:
+    except Exception:
         print("Cannot get signature, trying dir:")
         print(dir(types.HttpOptions))
         

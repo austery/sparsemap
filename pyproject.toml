@@ -24,6 +24,8 @@ sparsemap = "sparsemap.main:main"
 [dependency-groups]
 dev = [
     "ruff>=0.14.14",
+    "pytest>=8.0.0",
+    "pre-commit>=3.6.0",
 ]
 
 [build-system]

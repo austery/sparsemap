@@ -1,0 +1,32 @@
+repos:
+  - repo: https://github.com/astral-sh/ruff-pre-commit
+    rev: v0.3.0
+    hooks:
+      - id: ruff
+        args: [ --fix ]
+      - id: ruff-format
+
+  - repo: https://github.com/biomejs/pre-commit
+    rev: v0.3.0
+    hooks:
+      - id: biome-check
+        additional_dependencies: ["@biomejs/biome@1.9.4"]
+        args: [ --write ]
+
+  - repo: local
+    hooks:
+      - id: pytest
+        name: 🐍 Backend Tests (Python)
+        entry: uv run pytest
+        language: system
+        types: [python]
+        stages: [push] # 只在 push 时运行，避免频繁 commit 变慢
+        pass_filenames: false
+
+      - id: bun-test
+        name: 🥟 Frontend Tests (JS)
+        entry: bun test
+        language: system
+        files: \.(js|ts)$
+        stages: [push]
+        pass_filenames: false

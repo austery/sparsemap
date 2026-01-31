@@ -5,7 +5,7 @@ try:
     print("Signature of types.GenerateContentConfig:")
     try:
         print(inspect.signature(types.GenerateContentConfig))
-    except:
+    except Exception:
         print(dir(types.GenerateContentConfig))
         
     print("\nDocstring:")
