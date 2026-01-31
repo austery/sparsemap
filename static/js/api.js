@@ -27,11 +27,11 @@ export async function fetchHistory() {
 }
 
 export async function fetchHistoryItem(id) {
-  return fetchJson(`${API_BASE}/api/history/${id}`);
+  return fetchJson(`${API_BASE}/api/history/${encodeURIComponent(id)}`);
 }
 
 export async function deleteHistoryItem(id) {
-  const response = await fetch(`${API_BASE}/api/history/${id}`, { method: 'DELETE' });
+  const response = await fetch(`${API_BASE}/api/history/${encodeURIComponent(id)}`, { method: 'DELETE' });
   if (!response.ok) {
     let data;
     try {

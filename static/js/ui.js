@@ -108,7 +108,7 @@ export function renderHistoryList(items) {
                 <div class="history-item-title">${escapeHtml(item.title)}</div>
                 <div class="history-item-meta">
                     <span class="history-type ${sourceType}">${sourceType === 'url' ? '🔗 URL' : '📝 文本'}</span>
-                    <span class="history-nodes">${item.node_count} 节点</span>
+                    <span class="history-nodes">${escapeHtml(String(item.node_count))} 节点</span>
                     <span class="history-date">${formatDate(item.created_at)}</span>
                 </div>
             </div>
