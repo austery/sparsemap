@@ -322,3 +322,64 @@ export function addLinkedConcept(conceptData) {
   // Re-run layout
   runLayout();
 }
+
+export function addExpandedNodes(expandedData, parentNodeId) {
+  // expandedData: { child_nodes: [...], new_edges: [...] }
+  if (!state.cy || !state.currentGraphData) {
+    console.error('Cannot add expanded nodes: graph not initialized');
+    return;
+  }
+
+  const cy = state.cy;
+  const graphData = state.currentGraphData;
+
+  // Mark parent as expanded
+  const parentNode = cy.getElementById(parentNodeId);
+  if (parentNode) {
+    parentNode.data('expanded', true);
+  }
+
+  // Add child nodes
+  const existingNodeIds = new Set(graphData.nodes.map((n) => n.id));
+  expandedData.child_nodes.forEach((node) => {
+    if (!existingNodeIds.has(node.id)) {
+      graphData.nodes.push(node);
+      cy.add({
+        group: 'nodes',
+        data: {
+          id: node.id,
+          label: node.label,
+          type: node.type || 'dependency',
+          description: node.description || '',
+          reason: node.reason || '',
+          source: node.source || '',
+          level: node.level || 1,
+          expandable: node.expandable || false,
+          parentId: node.parent_id || parentNodeId,
+        },
+      });
+    }
+  });
+
+  // Add edges
+  const existingEdgeIds = new Set(graphData.edges.map((e) => `${e.source}-${e.target}`));
+  expandedData.new_edges.forEach((edge) => {
+    const edgeId = `${edge.source}-${edge.target}`;
+    if (!existingEdgeIds.has(edgeId)) {
+      graphData.edges.push(edge);
+      cy.add({
+        group: 'edges',
+        data: {
+          id: `e${edge.source}-${edge.target}`,
+          source: edge.source,
+          target: edge.target,
+          reason: edge.reason || '',
+          type: edge.type || 'implements',
+        },
+      });
+    }
+  });
+
+  // Re-run layout
+  runLayout();
+}

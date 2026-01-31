@@ -1,7 +1,10 @@
 from __future__ import annotations
 
+from typing import List, Optional
+
 from fastapi import APIRouter, Depends, HTTPException, Query
 from fastapi.responses import PlainTextResponse
+from pydantic import BaseModel
 from sqlmodel import Session
 
 from sparsemap.domain.models import (
@@ -22,6 +25,9 @@ from sparsemap.domain.models import (
     IntegrateConceptData,
     LinkedNode,
     LinkedEdge,
+    ExpandNodeRequest,
+    ExpandNodeResponse,
+    ExpandedNodeData,
 )
 from sparsemap.infra.db import get_session
 from sparsemap.services.extractor import fetch_url_content, hash_url
@@ -30,6 +36,7 @@ from sparsemap.services.llm import (
     analyze_contents,
     generate_node_details,
     integrate_concept,
+    expand_node,
 )
 from sparsemap.services.repository import (
     get_analysis_by_hash,
@@ -39,9 +46,41 @@ from sparsemap.services.repository import (
     count_analyses,
     delete_analysis,
 )
+from sparsemap.services.embedding import (
+    store_node_embeddings,
+    search_similar_nodes,
+    has_embeddings,
+)
 
 
 router = APIRouter()
+
+
+# Response models for embedding endpoints
+class SimilarNode(BaseModel):
+    """A node similar to the query."""
+
+    id: int
+    analysis_id: int
+    node_id: str
+    node_label: str
+    node_description: Optional[str] = None
+    similarity: float
+
+
+class RecallResponse(BaseModel):
+    """Response for recall endpoint."""
+
+    success: bool
+    results: List[SimilarNode]
+
+
+class EmbedResponse(BaseModel):
+    """Response for embed endpoint."""
+
+    success: bool
+    message: str
+    count: int
 
 
 def _extract_title(url: str = None, text: str = None, graph: Graph = None) -> str:
@@ -430,3 +469,129 @@ async def export_analysis(
     mime_type = get_mime_type(format)
 
     return PlainTextResponse(content=content, media_type=mime_type)
+
+
+@router.post("/embed/{analysis_id}", response_model=EmbedResponse)
+async def embed_analysis(
+    analysis_id: int,
+    session: Session = Depends(get_session),
+) -> EmbedResponse:
+    """
+    Generate embeddings for all nodes in an analysis.
+    This enables semantic similarity search via the /recall endpoint.
+    """
+    record = get_analysis_by_id(session, analysis_id)
+    if not record:
+        raise HTTPException(status_code=404, detail="Analysis not found")
+
+    if has_embeddings(session, analysis_id):
+        return EmbedResponse(
+            success=True,
+            message="Embeddings already exist for this analysis",
+            count=0,
+        )
+
+    graph = Graph.model_validate(record.graph_data)
+
+    try:
+        embeddings = store_node_embeddings(session, analysis_id, graph)
+        return EmbedResponse(
+            success=True,
+            message=f"Generated embeddings for {len(embeddings)} nodes",
+            count=len(embeddings),
+        )
+    except Exception as exc:
+        raise HTTPException(
+            status_code=500, detail=f"Failed to generate embeddings: {str(exc)}"
+        ) from exc
+
+
+@router.get("/recall", response_model=RecallResponse)
+async def recall_similar_nodes(
+    query: str = Query(..., min_length=1, description="Search query text"),
+    top_k: int = Query(default=5, ge=1, le=20, description="Number of results"),
+    exclude_analysis_id: Optional[int] = Query(
+        default=None, description="Exclude nodes from this analysis"
+    ),
+    session: Session = Depends(get_session),
+) -> RecallResponse:
+    """
+    Search for semantically similar nodes across all analyses.
+    Useful for finding related historical knowledge.
+    """
+    try:
+        results = search_similar_nodes(
+            session, query, top_k=top_k, exclude_analysis_id=exclude_analysis_id
+        )
+        return RecallResponse(
+            success=True,
+            results=[SimilarNode(**r) for r in results],
+        )
+    except Exception as exc:
+        raise HTTPException(
+            status_code=500, detail=f"Search failed: {str(exc)}"
+        ) from exc
+
+
+@router.post("/expand-node", response_model=ExpandNodeResponse)
+async def expand_node_endpoint(
+    request: ExpandNodeRequest,
+) -> ExpandNodeResponse:
+    """
+    Expand a node to reveal its sub-concepts.
+    Uses AI to analyze and generate child nodes.
+    """
+    if not request.node_label.strip():
+        raise HTTPException(status_code=400, detail="节点标签不能为空")
+
+    try:
+        result = expand_node(
+            node_id=request.node_id,
+            node_label=request.node_label.strip(),
+            node_description=request.node_description,
+            graph_context=request.graph_context,
+        )
+
+        # Parse child nodes into Node objects
+        child_nodes = []
+        for n in result.get("child_nodes", []):
+            try:
+                node = Node(
+                    id=n.get("id", f"{request.node_id}_sub"),
+                    label=n.get("label", "Unknown"),
+                    type=NodeType(n.get("type", "dependency")),
+                    priority=Priority(n.get("priority", "optional")),
+                    reason=n.get("reason", ""),
+                    description=n.get("description"),
+                    level=n.get("level", 1),
+                    expandable=n.get("expandable", False),
+                    parent_id=n.get("parent_id", request.node_id),
+                )
+                child_nodes.append(node)
+            except Exception:
+                # Skip invalid nodes
+                pass
+
+        # Parse edges
+        new_edges = []
+        for e in result.get("new_edges", []):
+            try:
+                edge = Edge(
+                    source=e.get("source", request.node_id),
+                    target=e.get("target", ""),
+                    type=EdgeType(e.get("type", "implements")),
+                    reason=e.get("reason", ""),
+                )
+                if edge.target:  # Only add edges with valid targets
+                    new_edges.append(edge)
+            except Exception as e:
+                # Skip invalid edges
+                pass
+
+        data = ExpandedNodeData(child_nodes=child_nodes, new_edges=new_edges)
+        return ExpandNodeResponse(success=True, data=data)
+
+    except Exception as exc:
+        raise HTTPException(
+            status_code=500, detail=f"展开节点失败: {str(exc)}"
+        ) from exc

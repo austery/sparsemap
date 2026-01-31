@@ -101,3 +101,30 @@ export async function exportGraph(analysisId, format = 'mermaid') {
   }
   return response.text();
 }
+
+export async function embedAnalysis(analysisId) {
+  return fetchJson(`${API_BASE}/api/embed/${encodeURIComponent(analysisId)}`, {
+    method: 'POST',
+  });
+}
+
+export async function recallSimilarNodes(query, topK = 5, excludeAnalysisId = null) {
+  const params = new URLSearchParams({ query, top_k: topK });
+  if (excludeAnalysisId) {
+    params.append('exclude_analysis_id', excludeAnalysisId);
+  }
+  return fetchJson(`${API_BASE}/api/recall?${params.toString()}`);
+}
+
+export async function expandNode(nodeId, nodeLabel, nodeDescription = null, graphContext = null) {
+  return fetchJson(`${API_BASE}/api/expand-node`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      node_id: nodeId,
+      node_label: nodeLabel,
+      node_description: nodeDescription,
+      graph_context: graphContext,
+    }),
+  });
+}

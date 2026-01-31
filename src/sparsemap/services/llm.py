@@ -213,3 +213,94 @@ def integrate_concept(new_concept: str, existing_nodes: List[dict]) -> dict:
             },
             "edges": [],
         }
+
+
+def expand_node(
+    node_id: str, node_label: str, node_description: str | None, graph_context: str | None
+) -> dict:
+    """
+    Expand a node to reveal its sub-concepts and details.
+
+    Args:
+        node_id: ID of the node to expand
+        node_label: Label of the node
+        node_description: Optional description
+        graph_context: Optional context about the current graph
+
+    Returns:
+        dict with 'child_nodes' and 'new_edges'
+    """
+    provider = _get_provider()
+
+    context_text = ""
+    if graph_context:
+        context_text = f"\n当前图谱概述: {graph_context}\n"
+    if node_description:
+        context_text += f"\n节点描述: {node_description}\n"
+
+    prompt = f"""你是一位知识架构专家。用户想要展开一个知识节点，查看其包含的子概念。
+
+要展开的节点: {node_label} (id: {node_id})
+{context_text}
+
+任务:
+1. 分析这个概念，找出其包含的 2-4 个核心子概念或组成部分
+2. 为每个子概念创建节点
+3. 建立从父节点到子节点的边
+
+返回严格的 JSON 格式:
+{{
+  "child_nodes": [
+    {{
+      "id": "{node_id}_sub1",
+      "label": "子概念名称",
+      "type": "dependency",
+      "priority": "critical" | "optional",
+      "reason": "这个子概念的作用",
+      "description": "简短描述",
+      "level": 1,
+      "expandable": false,
+      "parent_id": "{node_id}"
+    }}
+  ],
+  "new_edges": [
+    {{
+      "source": "{node_id}",
+      "target": "{node_id}_sub1",
+      "type": "implements" | "depends_on" | "supports",
+      "reason": "父子关系说明"
+    }}
+  ]
+}}
+
+注意:
+- 子节点数量控制在 2-4 个，不要太多
+- 子节点的 id 格式为 父节点id_sub1, 父节点id_sub2 等
+- 子节点的 level 应该是 1（表示次级节点）
+- 子节点的 parent_id 应该是父节点的 id
+- type 应该是 dependency
+- expandable 设为 false（子节点通常不再可展开）
+"""
+
+    import json
+
+    result = provider.generate_raw(prompt)
+
+    try:
+        # Clean up the response
+        result = result.strip()
+        if result.startswith("```json"):
+            result = result[7:]
+        if result.startswith("```"):
+            result = result[3:]
+        if result.endswith("```"):
+            result = result[:-3]
+        result = result.strip()
+
+        data = json.loads(result)
+        return data
+    except json.JSONDecodeError as e:
+        logger.error(f"Failed to parse expand response: {e}")
+        logger.error(f"Raw response: {result}")
+        # Return empty structure on failure
+        return {"child_nodes": [], "new_edges": []}

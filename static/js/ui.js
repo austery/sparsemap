@@ -180,11 +180,17 @@ export function showNodeInfo(nodeData, currentGraphData) {
 
   // Add Deep Dive button
   basicHtml += `
-        <div style="margin-top: 16px; text-align: center;">
+        <div class="node-actions" style="margin-top: 16px; display: flex; gap: 8px; flex-wrap: wrap;">
             <button id="deep-dive-btn" class="deep-dive-btn"
                 data-label="${escapeHtml(nodeData.label)}"
                 data-desc="${escapeHtml(nodeData.description || '')}">
                 🔍 Deep Dive (AI 详解)
+            </button>
+            <button id="expand-node-btn" class="expand-node-btn"
+                data-id="${escapeHtml(nodeData.id)}"
+                data-label="${escapeHtml(nodeData.label)}"
+                data-desc="${escapeHtml(nodeData.description || '')}">
+                ➕ 展开子概念
             </button>
         </div>
         <div id="deep-dive-content"></div>`;
@@ -193,7 +199,7 @@ export function showNodeInfo(nodeData, currentGraphData) {
   panel.classList.add('visible');
 }
 
-export function renderDeepDiveContent(details) {
+export function renderDeepDiveContent(details, similarNodes = []) {
   const contentDiv = document.getElementById('deep-dive-content');
   const btn = document.getElementById('deep-dive-btn');
 
@@ -201,7 +207,7 @@ export function renderDeepDiveContent(details) {
 
   if (btn) btn.style.display = 'none';
 
-  const html = `
+  let html = `
         <div class="detail-card">
             <div class="card-label">📖 Definition</div>
             <div class="card-content">${escapeHtml(details.definition)}</div>
@@ -229,6 +235,28 @@ export function renderDeepDiveContent(details) {
             </div>
         </div>
     `;
+
+  // Add similar nodes section if available
+  if (similarNodes && similarNodes.length > 0) {
+    html += `
+        <div class="detail-card similar-nodes-card">
+            <div class="card-label">🔗 Related Historical Knowledge</div>
+            <div class="similar-nodes-list">
+                ${similarNodes
+                  .map(
+                    (node) => `
+                    <div class="similar-node-item">
+                        <span class="similar-node-label">${escapeHtml(node.node_label)}</span>
+                        <span class="similar-node-score">${Math.round(node.similarity * 100)}%</span>
+                    </div>
+                `
+                  )
+                  .join('')}
+            </div>
+        </div>
+    `;
+  }
+
   contentDiv.innerHTML = html;
 }
 

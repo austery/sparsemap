@@ -300,6 +300,36 @@ textarea::placeholder {
     cursor: not-allowed;
 }
 
+.expand-node-btn {
+    background: linear-gradient(135deg, var(--accent-secondary) 0%, #0891b2 100%);
+    color: white;
+    border: none;
+    padding: 12px 24px;
+    border-radius: var(--radius-sm);
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    box-shadow: 0 4px 15px rgba(6, 182, 212, 0.3);
+}
+
+.expand-node-btn:hover:not(:disabled) {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 20px rgba(6, 182, 212, 0.5);
+}
+
+.expand-node-btn:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+}
+
+.node-actions {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+    justify-content: center;
+}
+
 #deep-dive-content {
     margin-top: 16px;
 }
@@ -1052,6 +1082,38 @@ textarea {
 
 .export-option:hover {
     background: rgba(139, 92, 246, 0.2);
+}
+
+/* Similar Nodes (Knowledge Recall) */
+.similar-nodes-card {
+    border-color: var(--accent-secondary);
+}
+
+.similar-nodes-list {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.similar-node-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 8px 12px;
+    background: rgba(6, 182, 212, 0.1);
+    border-radius: 6px;
+    border: 1px solid rgba(6, 182, 212, 0.2);
+}
+
+.similar-node-label {
+    font-size: 13px;
+    color: var(--text-primary);
+}
+
+.similar-node-score {
+    font-size: 12px;
+    color: var(--accent-secondary);
+    font-weight: 600;
 }
 
 /* Modal Label and Hint */

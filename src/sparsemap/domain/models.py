@@ -5,9 +5,10 @@ from enum import Enum
 from typing import List, Optional
 
 from pydantic import BaseModel, Field as PydanticField
-from sqlalchemy import Column
+from sqlalchemy import Column, Index
 from sqlmodel import Field, SQLModel
 from sqlmodel import JSON as SQLModelJSON
+from pgvector.sqlalchemy import Vector
 
 
 class NodeType(str, Enum):
@@ -36,6 +37,10 @@ class Node(BaseModel):
     reason: str
     description: Optional[str] = None
     source: Optional[str] = None
+    # Expandable node fields
+    level: int = 0  # 0=root/core, 1=secondary, 2=detailed
+    expandable: bool = False  # Whether this node can be expanded
+    parent_id: Optional[str] = None  # Parent node ID if this is a child
 
 
 class Edge(BaseModel):
@@ -74,6 +79,27 @@ class AnalysisResult(SQLModel, table=True):
     original_url: Optional[str] = Field(default=None)  # Original URL if source is URL
     source_type: str = Field(default="text")  # "url" or "text"
     graph_data: dict = Field(sa_column=Column(SQLModelJSON))
+    created_at: datetime = Field(default_factory=datetime.utcnow)
+
+
+# Embedding dimension for text-embedding-3-small (OpenAI) or text-embedding-004 (Gemini)
+EMBEDDING_DIM = 768
+
+
+class NodeEmbedding(SQLModel, table=True):
+    """Store node embeddings for semantic similarity search."""
+
+    __tablename__ = "node_embedding"
+    __table_args__ = (
+        Index("ix_node_embedding_analysis_id", "analysis_id"),
+    )
+
+    id: Optional[int] = Field(default=None, primary_key=True)
+    analysis_id: int = Field(index=True)  # Foreign key to AnalysisResult
+    node_id: str  # Original node ID from the graph
+    node_label: str
+    node_description: Optional[str] = None
+    embedding: List[float] = Field(sa_column=Column(Vector(EMBEDDING_DIM)))
     created_at: datetime = Field(default_factory=datetime.utcnow)
 
 
@@ -170,4 +196,28 @@ class IntegrateConceptResponse(BaseModel):
 
     success: bool
     data: Optional[IntegrateConceptData] = None
+    error: Optional[str] = None
+
+
+class ExpandNodeRequest(BaseModel):
+    """Request for expand-node endpoint"""
+
+    node_id: str
+    node_label: str
+    node_description: Optional[str] = None
+    graph_context: Optional[str] = None  # Summary of the current graph
+
+
+class ExpandedNodeData(BaseModel):
+    """Data returned from expand-node"""
+
+    child_nodes: List[Node]
+    new_edges: List[Edge]
+
+
+class ExpandNodeResponse(BaseModel):
+    """Response for expand-node endpoint"""
+
+    success: bool
+    data: Optional[ExpandedNodeData] = None
     error: Optional[str] = None

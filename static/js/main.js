@@ -1,6 +1,7 @@
 import * as API from './api.js';
 import {
   addLinkedConcept,
+  addExpandedNodes,
   formatGraph,
   mergeGraphData,
   renderGraph,
@@ -165,6 +166,16 @@ function handleDynamicEvents(e) {
     handleDeepDive(label, desc);
     return;
   }
+
+  // Expand Node
+  const expandBtn = e.target.closest('#expand-node-btn');
+  if (expandBtn) {
+    const id = expandBtn.dataset.id;
+    const label = expandBtn.dataset.label;
+    const desc = expandBtn.dataset.desc;
+    handleExpandNode(id, label, desc);
+    return;
+  }
 }
 
 async function handleAnalyze() {
@@ -310,15 +321,52 @@ async function handleAddUrl() {
 async function handleDeepDive(label, desc) {
   UI.setDeepDiveLoading();
   try {
-    const result = await API.fetchNodeDetails({
-      node_label: label,
-      node_description: desc,
-      node_context: desc,
-    });
-    UI.renderDeepDiveContent(result);
+    // Fetch node details and similar nodes in parallel
+    const [result, recallResult] = await Promise.all([
+      API.fetchNodeDetails({
+        node_label: label,
+        node_description: desc,
+        node_context: desc,
+      }),
+      API.recallSimilarNodes(label, 3, state.currentAnalysisId).catch(() => ({
+        success: false,
+        results: [],
+      })),
+    ]);
+
+    const similarNodes = recallResult.success ? recallResult.results : [];
+    UI.renderDeepDiveContent(result, similarNodes);
   } catch (e) {
     console.error(e);
     UI.renderDeepDiveError(e);
+  }
+}
+
+async function handleExpandNode(nodeId, label, desc) {
+  const expandBtn = document.getElementById('expand-node-btn');
+  if (expandBtn) {
+    expandBtn.disabled = true;
+    expandBtn.textContent = '⏳ 展开中...';
+  }
+
+  try {
+    const graphContext = state.currentGraphData?.summary || '';
+    const result = await API.expandNode(nodeId, label, desc, graphContext);
+
+    if (result.success && result.data) {
+      addExpandedNodes(result.data, nodeId);
+      UI.hideNodeInfo();
+    } else {
+      alert(`展开失败: ${result.error || '未知错误'}`);
+    }
+  } catch (e) {
+    console.error(e);
+    alert(`展开失败: ${e.message}`);
+  } finally {
+    if (expandBtn) {
+      expandBtn.disabled = false;
+      expandBtn.textContent = '➕ 展开子概念';
+    }
   }
 }
 
