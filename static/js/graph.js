@@ -1,5 +1,5 @@
 // static/js/graph.js
-import { setCy, setGraphData, state } from './state.js';
+import { setCy, setGraphData, state, markDirty } from './state.js';
 import { hideNodeInfo, showNodeInfo } from './ui.js';
 
 // Layout direction state: 'TB' (top-bottom) or 'LR' (left-right)
@@ -151,6 +151,12 @@ export function initCytoscape() {
   cyInstance.on('tap', 'node', (evt) => {
     const node = evt.target;
     showNodeInfo(node.data(), state.currentGraphData);
+  });
+
+  // 节点双击事件 - 进入编辑模式
+  cyInstance.on('dbltap', 'node', (evt) => {
+    const node = evt.target;
+    showEditNodeModal(node.data());
   });
 
   // 画布点击事件（取消选择）
@@ -382,4 +388,108 @@ export function addExpandedNodes(expandedData, parentNodeId) {
 
   // Re-run layout
   runLayout();
+}
+
+// Edit node modal functions
+function showEditNodeModal(nodeData) {
+  const modal = document.getElementById('edit-node-modal');
+  if (!modal) return;
+
+  document.getElementById('edit-node-id').value = nodeData.id;
+  document.getElementById('edit-node-label').value = nodeData.label || '';
+  document.getElementById('edit-node-description').value = nodeData.description || '';
+  document.getElementById('edit-node-reason').value = nodeData.reason || '';
+  document.getElementById('edit-node-type').value = nodeData.type || 'main';
+  document.getElementById('edit-node-priority').value = nodeData.priority || 'critical';
+
+  modal.classList.remove('hidden');
+}
+
+export function hideEditNodeModal() {
+  const modal = document.getElementById('edit-node-modal');
+  if (modal) modal.classList.add('hidden');
+}
+
+export function updateNodeInGraph(nodeId, updates) {
+  if (!state.cy || !state.currentGraphData) return false;
+
+  const cy = state.cy;
+  const graphData = state.currentGraphData;
+
+  // Update in Cytoscape
+  const cyNode = cy.getElementById(nodeId);
+  if (cyNode) {
+    cyNode.data(updates);
+  }
+
+  // Update in graph data
+  const nodeIndex = graphData.nodes.findIndex((n) => n.id === nodeId);
+  if (nodeIndex !== -1) {
+    Object.assign(graphData.nodes[nodeIndex], updates);
+  }
+
+  markDirty();
+  return true;
+}
+
+export function deleteNodeFromGraph(nodeId) {
+  if (!state.cy || !state.currentGraphData) return false;
+
+  const cy = state.cy;
+  const graphData = state.currentGraphData;
+
+  // Remove from Cytoscape (this also removes connected edges)
+  const cyNode = cy.getElementById(nodeId);
+  if (cyNode) {
+    cyNode.remove();
+  }
+
+  // Remove from graph data
+  graphData.nodes = graphData.nodes.filter((n) => n.id !== nodeId);
+  graphData.edges = graphData.edges.filter((e) => e.source !== nodeId && e.target !== nodeId);
+
+  markDirty();
+  return true;
+}
+
+export function addNodeToGraph(nodeData) {
+  if (!state.cy || !state.currentGraphData) return false;
+
+  const cy = state.cy;
+  const graphData = state.currentGraphData;
+
+  // Generate unique ID
+  const existingIds = new Set(graphData.nodes.map((n) => n.id));
+  let newId = `n${graphData.nodes.length + 1}`;
+  while (existingIds.has(newId)) {
+    newId = `n${Date.now()}`;
+  }
+
+  const newNode = {
+    id: newId,
+    label: nodeData.label,
+    description: nodeData.description || '',
+    reason: nodeData.reason || 'User added',
+    type: nodeData.type || 'main',
+    priority: nodeData.priority || 'critical',
+  };
+
+  // Add to graph data
+  graphData.nodes.push(newNode);
+
+  // Add to Cytoscape
+  cy.add({
+    group: 'nodes',
+    data: {
+      id: newNode.id,
+      label: newNode.label,
+      type: newNode.type,
+      description: newNode.description,
+      reason: newNode.reason,
+    },
+  });
+
+  markDirty();
+  runLayout();
+  return newNode;
 }

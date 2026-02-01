@@ -1131,3 +1131,99 @@ textarea {
     margin-top: 8px;
     opacity: 0.8;
 }
+
+/* Edit Modal Styles */
+.modal-wide {
+    max-width: 500px;
+}
+
+.modal-body textarea {
+    width: 100%;
+    padding: 12px;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: var(--radius-sm);
+    background: rgba(255, 255, 255, 0.05);
+    color: var(--text-primary);
+    font-size: 14px;
+    resize: vertical;
+    font-family: inherit;
+}
+
+.modal-body textarea:focus {
+    outline: none;
+    border-color: var(--accent-primary);
+}
+
+.modal-body select {
+    width: 100%;
+    padding: 12px;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: var(--radius-sm);
+    background: rgba(255, 255, 255, 0.05);
+    color: var(--text-primary);
+    font-size: 14px;
+    cursor: pointer;
+}
+
+.modal-body select:focus {
+    outline: none;
+    border-color: var(--accent-primary);
+}
+
+.edit-row {
+    display: flex;
+    gap: 12px;
+    margin-top: 8px;
+}
+
+.edit-field {
+    flex: 1;
+}
+
+.modal-footer {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.modal-footer-right {
+    display: flex;
+    gap: 8px;
+}
+
+.btn-danger {
+    padding: 10px 16px;
+    background: rgba(239, 68, 68, 0.2);
+    border: 1px solid rgba(239, 68, 68, 0.4);
+    color: #ef4444;
+    border-radius: var(--radius-sm);
+    font-size: 14px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.btn-danger:hover {
+    background: rgba(239, 68, 68, 0.3);
+    border-color: #ef4444;
+}
+
+/* Header Actions */
+.header-actions {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+}
+
+/* Dirty state indicator */
+.graph-dirty .save-indicator {
+    display: inline-block;
+}
+
+.save-indicator {
+    display: none;
+    width: 8px;
+    height: 8px;
+    background: var(--accent-warning);
+    border-radius: 50%;
+    margin-left: 4px;
+}

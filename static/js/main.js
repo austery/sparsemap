@@ -2,12 +2,16 @@ import * as API from './api.js';
 import {
   addLinkedConcept,
   addExpandedNodes,
+  addNodeToGraph,
+  deleteNodeFromGraph,
   formatGraph,
+  hideEditNodeModal,
   mergeGraphData,
   renderGraph,
   toggleLayoutDirection,
+  updateNodeInGraph,
 } from './graph.js';
-import { setGraphData, state } from './state.js';
+import { setGraphData, state, markClean } from './state.js';
 import * as UI from './ui.js';
 import { exportGraphLocally } from './exporter.js';
 
@@ -133,6 +137,42 @@ function initEventListeners() {
       });
     });
   }
+
+  // Save graph button
+  const saveGraphBtn = document.getElementById('save-graph-btn');
+  if (saveGraphBtn) {
+    saveGraphBtn.addEventListener('click', handleSaveGraph);
+  }
+
+  // Add node button
+  const addNodeBtn = document.getElementById('add-node-btn');
+  if (addNodeBtn) {
+    addNodeBtn.addEventListener('click', showAddNodeModal);
+  }
+
+  // Edit node modal
+  const closeEditModalBtn = document.getElementById('close-edit-modal');
+  const editNodeBackdrop = document.getElementById('edit-node-backdrop');
+  const cancelEditBtn = document.getElementById('cancel-edit-btn');
+  const saveEditBtn = document.getElementById('save-edit-btn');
+  const deleteNodeBtn = document.getElementById('delete-node-btn');
+
+  if (closeEditModalBtn) closeEditModalBtn.addEventListener('click', hideEditNodeModal);
+  if (editNodeBackdrop) editNodeBackdrop.addEventListener('click', hideEditNodeModal);
+  if (cancelEditBtn) cancelEditBtn.addEventListener('click', hideEditNodeModal);
+  if (saveEditBtn) saveEditBtn.addEventListener('click', handleSaveNodeEdit);
+  if (deleteNodeBtn) deleteNodeBtn.addEventListener('click', handleDeleteNode);
+
+  // Add node modal
+  const closeAddNodeModalBtn = document.getElementById('close-add-node-modal');
+  const addNodeBackdrop = document.getElementById('add-node-backdrop');
+  const cancelAddNodeBtn = document.getElementById('cancel-add-node-btn');
+  const confirmAddNodeBtn = document.getElementById('confirm-add-node-btn');
+
+  if (closeAddNodeModalBtn) closeAddNodeModalBtn.addEventListener('click', hideAddNodeModal);
+  if (addNodeBackdrop) addNodeBackdrop.addEventListener('click', hideAddNodeModal);
+  if (cancelAddNodeBtn) cancelAddNodeBtn.addEventListener('click', hideAddNodeModal);
+  if (confirmAddNodeBtn) confirmAddNodeBtn.addEventListener('click', handleAddNode);
 
   // Delegate dynamic events (History load/delete, Deep Dive)
   document.body.addEventListener('click', handleDynamicEvents);
@@ -484,6 +524,107 @@ async function handleExport(format) {
   } catch (e) {
     console.error(e);
     alert(`导出失败: ${e.message}`);
+  }
+}
+
+// Graph editing handlers
+async function handleSaveGraph() {
+  if (!state.currentGraphData) {
+    alert('没有可保存的图谱数据');
+    return;
+  }
+
+  if (!state.currentAnalysisId) {
+    alert('无法保存：缺少分析 ID（新建的图谱需要先提交）');
+    return;
+  }
+
+  if (!state.isDirty) {
+    alert('没有需要保存的修改');
+    return;
+  }
+
+  const saveBtn = document.getElementById('save-graph-btn');
+  if (saveBtn) {
+    saveBtn.disabled = true;
+    saveBtn.querySelector('span').textContent = '保存中...';
+  }
+
+  try {
+    await API.updateAnalysis(state.currentAnalysisId, state.currentGraphData);
+    markClean();
+    alert('✅ 保存成功');
+  } catch (e) {
+    console.error(e);
+    alert(`保存失败: ${e.message}`);
+  } finally {
+    if (saveBtn) {
+      saveBtn.disabled = false;
+      saveBtn.querySelector('span').textContent = '保存';
+    }
+  }
+}
+
+function handleSaveNodeEdit() {
+  const nodeId = document.getElementById('edit-node-id').value;
+  const updates = {
+    label: document.getElementById('edit-node-label').value.trim(),
+    description: document.getElementById('edit-node-description').value.trim(),
+    reason: document.getElementById('edit-node-reason').value.trim(),
+    type: document.getElementById('edit-node-type').value,
+    priority: document.getElementById('edit-node-priority').value,
+  };
+
+  if (!updates.label) {
+    alert('节点名称不能为空');
+    return;
+  }
+
+  updateNodeInGraph(nodeId, updates);
+  hideEditNodeModal();
+  UI.hideNodeInfo();
+}
+
+function handleDeleteNode() {
+  const nodeId = document.getElementById('edit-node-id').value;
+  const nodeLabel = document.getElementById('edit-node-label').value;
+
+  if (!confirm(`确定要删除节点 "${nodeLabel}" 吗？相关的边也会被删除。`)) {
+    return;
+  }
+
+  deleteNodeFromGraph(nodeId);
+  hideEditNodeModal();
+  UI.hideNodeInfo();
+}
+
+function showAddNodeModal() {
+  const modal = document.getElementById('add-node-modal');
+  if (modal) {
+    document.getElementById('add-node-label').value = '';
+    document.getElementById('add-node-description').value = '';
+    modal.classList.remove('hidden');
+    document.getElementById('add-node-label').focus();
+  }
+}
+
+function hideAddNodeModal() {
+  const modal = document.getElementById('add-node-modal');
+  if (modal) modal.classList.add('hidden');
+}
+
+function handleAddNode() {
+  const label = document.getElementById('add-node-label').value.trim();
+  const description = document.getElementById('add-node-description').value.trim();
+
+  if (!label) {
+    alert('请输入节点名称');
+    return;
+  }
+
+  const newNode = addNodeToGraph({ label, description });
+  if (newNode) {
+    hideAddNodeModal();
   }
 }
 

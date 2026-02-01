@@ -584,7 +584,7 @@ async def expand_node_endpoint(
                 )
                 if edge.target:  # Only add edges with valid targets
                     new_edges.append(edge)
-            except Exception as e:
+            except Exception:
                 # Skip invalid edges
                 pass
 
@@ -595,3 +595,23 @@ async def expand_node_endpoint(
         raise HTTPException(
             status_code=500, detail=f"展开节点失败: {str(exc)}"
         ) from exc
+
+
+@router.patch("/analysis/{analysis_id}")
+async def update_analysis(
+    analysis_id: int,
+    graph_data: Graph,
+    session: Session = Depends(get_session),
+):
+    """
+    Update an analysis with edited graph data.
+    Used for saving edits made in the graph editor.
+    """
+    record = get_analysis_by_id(session, analysis_id)
+    if not record:
+        raise HTTPException(status_code=404, detail="Analysis not found")
+
+    record.graph_data = graph_data.model_dump()
+    session.commit()
+
+    return {"success": True, "message": "Analysis updated"}

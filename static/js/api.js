@@ -128,3 +128,11 @@ export async function expandNode(nodeId, nodeLabel, nodeDescription = null, grap
     }),
   });
 }
+
+export async function updateAnalysis(analysisId, graphData) {
+  return fetchJson(`${API_BASE}/api/analysis/${encodeURIComponent(analysisId)}`, {
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(graphData),
+  });
+}
