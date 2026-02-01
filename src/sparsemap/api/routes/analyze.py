@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from typing import List, Optional
 
-from fastapi import APIRouter, Depends, HTTPException, Query
+from fastapi import APIRouter, Depends, HTTPException, Query, BackgroundTasks
 from fastapi.responses import PlainTextResponse
 from pydantic import BaseModel
 from sqlmodel import Session
@@ -107,7 +107,9 @@ def _extract_title(url: str = None, text: str = None, graph: Graph = None) -> st
 
 @router.post("/analyze", response_model=AnalyzeResponse)
 async def analyze(
-    request: AnalyzeRequest, session: Session = Depends(get_session)
+    request: AnalyzeRequest,
+    background_tasks: BackgroundTasks,
+    session: Session = Depends(get_session),
 ) -> AnalyzeResponse:
     contents = []
     sources = []
@@ -140,7 +142,7 @@ async def analyze(
         url_hash = hash_url(url)
         if not get_analysis_by_hash(session, url_hash):
             title = _extract_title(url=url, graph=graph)
-            save_analysis(
+            record = save_analysis(
                 session,
                 url_hash,
                 graph,
@@ -148,12 +150,16 @@ async def analyze(
                 original_url=url,
                 source_type="url",
             )
+            background_tasks.add_task(store_node_embeddings, session, record.id, graph)
 
     for text in request.texts:
         text_hash = hash_url(text)
         if not get_analysis_by_hash(session, text_hash):
             title = _extract_title(text=text, graph=graph)
-            save_analysis(session, text_hash, graph, title=title, source_type="text")
+            record = save_analysis(
+                session, text_hash, graph, title=title, source_type="text"
+            )
+            background_tasks.add_task(store_node_embeddings, session, record.id, graph)
 
     return AnalyzeResponse(success=True, data=graph, sources=sources)
 
@@ -358,7 +364,9 @@ async def analyze_test() -> AnalyzeResponse:
 
 @router.post("/add-url", response_model=AnalyzeResponse)
 async def add_url(
-    request: URLInput, session: Session = Depends(get_session)
+    request: URLInput,
+    background_tasks: BackgroundTasks,
+    session: Session = Depends(get_session),
 ) -> AnalyzeResponse:
     """Add a new URL to existing canvas."""
     try:
@@ -380,7 +388,7 @@ async def add_url(
     url_hash = hash_url(request.url)
     if not get_analysis_by_hash(session, url_hash):
         title = _extract_title(url=request.url, graph=graph)
-        save_analysis(
+        record = save_analysis(
             session,
             url_hash,
             graph,
@@ -388,6 +396,7 @@ async def add_url(
             original_url=request.url,
             source_type="url",
         )
+        background_tasks.add_task(store_node_embeddings, session, record.id, graph)
 
     return AnalyzeResponse(success=True, data=graph, sources=["new_url"])
 
