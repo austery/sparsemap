@@ -1,5 +1,5 @@
 // static/js/graph.js
-import { setCy, setGraphData, state, markDirty } from './state.js';
+import { markDirty, setCy, setGraphData, state } from './state.js';
 import { hideNodeInfo, showNodeInfo } from './ui.js';
 
 // Layout direction state: 'TB' (top-bottom) or 'LR' (left-right)

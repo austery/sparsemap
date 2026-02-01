@@ -249,7 +249,7 @@ export function renderDeepDiveContent(details, similarNodes = []) {
                         <span class="similar-node-label">${escapeHtml(node.node_label)}</span>
                         <span class="similar-node-score">${Math.round(node.similarity * 100)}%</span>
                     </div>
-                `
+                `,
                   )
                   .join('')}
             </div>

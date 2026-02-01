@@ -1,7 +1,8 @@
 import * as API from './api.js';
+import { exportGraphLocally } from './exporter.js';
 import {
-  addLinkedConcept,
   addExpandedNodes,
+  addLinkedConcept,
   addNodeToGraph,
   deleteNodeFromGraph,
   formatGraph,
@@ -11,9 +12,8 @@ import {
   toggleLayoutDirection,
   updateNodeInGraph,
 } from './graph.js';
-import { setGraphData, state, markClean } from './state.js';
+import { markClean, setGraphData, state } from './state.js';
 import * as UI from './ui.js';
-import { exportGraphLocally } from './exporter.js';
 
 document.addEventListener('DOMContentLoaded', () => {
   initEventListeners();
@@ -115,18 +115,18 @@ function initEventListeners() {
   // Export dropdown
   const exportBtn = document.getElementById('export-btn');
   const exportMenu = document.getElementById('export-menu');
-  
+
   if (exportBtn && exportMenu) {
     exportBtn.addEventListener('click', (e) => {
       e.stopPropagation();
       exportMenu.classList.toggle('hidden');
     });
-    
+
     // Close menu when clicking outside
     document.addEventListener('click', () => {
       exportMenu.classList.add('hidden');
     });
-    
+
     // Handle export option clicks
     exportMenu.querySelectorAll('.export-option').forEach((option) => {
       option.addEventListener('click', (e) => {
@@ -306,7 +306,7 @@ async function loadHistoryItem(id) {
   try {
     const result = await API.fetchHistoryItem(id);
     if (result.success) {
-      setGraphData(result.data, parseInt(id, 10));  // Store analysis ID
+      setGraphData(result.data, parseInt(id, 10)); // Store analysis ID
       UI.switchScreen('canvas');
       setTimeout(() => renderGraph(result.data), 100);
     }
@@ -499,7 +499,7 @@ async function handleExport(format) {
 
   try {
     let content;
-    
+
     // If we have an analysis ID, use the API for consistent export
     if (state.currentAnalysisId) {
       content = await API.exportGraph(state.currentAnalysisId, format);
@@ -510,7 +510,7 @@ async function handleExport(format) {
 
     // Copy to clipboard and offer download
     await navigator.clipboard.writeText(content);
-    
+
     const ext = { mermaid: 'mmd', d2: 'd2', json: 'json', markdown: 'md' }[format] || 'txt';
     const blob = new Blob([content], { type: 'text/plain' });
     const url = URL.createObjectURL(blob);
