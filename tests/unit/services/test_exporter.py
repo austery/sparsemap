@@ -62,7 +62,7 @@ def sample_graph() -> Graph:
 class TestMermaidExporter:
     def test_export_basic(self, sample_graph: Graph):
         result = export_graph(sample_graph, ExportFormat.MERMAID)
-        
+
         assert result.startswith("graph TD")
         assert 'n1["React"]' in result
         assert 'n2["Virtual DOM"]' in result
@@ -83,7 +83,7 @@ class TestMermaidExporter:
             edges=[],
         )
         result = export_graph(graph, ExportFormat.MERMAID)
-        
+
         # Should replace quotes and brackets
         assert "Test 'Node' (1)" in result
 
@@ -91,7 +91,7 @@ class TestMermaidExporter:
 class TestD2Exporter:
     def test_export_basic(self, sample_graph: Graph):
         result = export_graph(sample_graph, ExportFormat.D2)
-        
+
         assert 'n1: "React"' in result
         assert 'n2: "Virtual DOM"' in result
         assert "n1 -> n2: implements" in result
@@ -101,7 +101,7 @@ class TestD2Exporter:
 class TestJsonExporter:
     def test_export_basic(self, sample_graph: Graph):
         result = export_graph(sample_graph, ExportFormat.JSON)
-        
+
         # Should be valid JSON
         data = json.loads(result)
         assert len(data["nodes"]) == 3
@@ -112,13 +112,13 @@ class TestJsonExporter:
 class TestMarkdownExporter:
     def test_export_basic(self, sample_graph: Graph):
         result = export_graph(sample_graph, ExportFormat.MARKDOWN)
-        
+
         assert "# Knowledge Graph Export" in result
         assert "## Summary" in result
         assert "React framework overview" in result
         assert "## Nodes" in result
         assert "🔴 React" in result  # Critical priority
-        assert "🟡 JSX" in result    # Optional priority
+        assert "🟡 JSX" in result  # Optional priority
         assert "## Relationships" in result
         assert "| React | Virtual DOM | implements |" in result
 

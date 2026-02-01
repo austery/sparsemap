@@ -216,7 +216,10 @@ def integrate_concept(new_concept: str, existing_nodes: List[dict]) -> dict:
 
 
 def expand_node(
-    node_id: str, node_label: str, node_description: str | None, graph_context: str | None
+    node_id: str,
+    node_label: str,
+    node_description: str | None,
+    graph_context: str | None,
 ) -> dict:
     """
     Expand a node to reveal its sub-concepts and details.

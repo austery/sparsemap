@@ -44,7 +44,7 @@ class MermaidExporter:
         for node in graph.nodes:
             safe_id = _mermaid_id(node.id)
             safe_label = _sanitize_label(node.label)
-            lines.append(f"    {safe_id}[\"{safe_label}\"]")
+            lines.append(f'    {safe_id}["{safe_label}"]')
 
         # Add edges
         for edge in graph.edges:

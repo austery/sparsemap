@@ -90,9 +90,7 @@ class NodeEmbedding(SQLModel, table=True):
     """Store node embeddings for semantic similarity search."""
 
     __tablename__ = "node_embedding"
-    __table_args__ = (
-        Index("ix_node_embedding_analysis_id", "analysis_id"),
-    )
+    __table_args__ = (Index("ix_node_embedding_analysis_id", "analysis_id"),)
 
     id: Optional[int] = Field(default=None, primary_key=True)
     analysis_id: int = Field(index=True)  # Foreign key to AnalysisResult
